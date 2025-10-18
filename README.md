@@ -22,17 +22,35 @@ The Skills Builder helps you create custom Claude Skills that comply with [Anthr
 
 ## Two Ways to Use This
 
-### Option 1: Use as a Claude Skill (Recommended for Interactive Use)
+### Option 1: Use as a Claude Skill (Interactive - Recommended)
 
 Upload the Skills Builder as a skill to Claude, then ask Claude to help you build skills!
 
-**Download and upload:**
+**Requirements:**
+- **Claude Code**: ✅ Works out of the box (built-in filesystem access)
+- **Claude Desktop**: ✅ Works with [Filesystem MCP](https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem) enabled
+- **Claude Web**: ⚠️ Limited (can provide guidance but can't create files)
+
+**Setup:**
 1. Download [`skills-builder-skill.zip`](./skills-builder-skill.zip)
-2. Open Claude (web, desktop, or mobile)
+2. Open Claude (Code, Desktop, or Web)
 3. Go to Settings → Capabilities → Skills
 4. Enable "Code execution and file creation"
 5. Click "Upload skill"
 6. Select `skills-builder-skill.zip`
+
+**If using Claude Desktop**, you'll also need the Filesystem MCP:
+```json
+// Add to your claude_desktop_config.json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/your/workspace"]
+    }
+  }
+}
+```
 
 **Then use it:**
 ```
@@ -43,9 +61,13 @@ Upload the Skills Builder as a skill to Claude, then ask Claude to help you buil
 
 Claude will guide you through the process, validate your spec, generate files, and package everything for upload.
 
-### Option 2: Use as Command-Line Tools (Recommended for Automation)
+### Option 2: Use as Command-Line Tools (Automation)
 
 Clone and use the Python CLI directly for automation and CI/CD workflows.
+
+**Requirements:**
+- Python 3.9+
+- No external dependencies (uses stdlib only)
 
 ## Quick Start (CLI)
 
@@ -91,6 +113,15 @@ python3 -m code.cli pack --dir dist/analyzing-spreadsheets --out dist/analyzing-
 4. Select your .zip file
 5. Test with one of your example triggers
 
+## Platform Compatibility
+
+| Platform | Interactive Skill | CLI Tools | Notes |
+|----------|-------------------|-----------|-------|
+| **Claude Code** | ✅ Full support | ✅ Full support | Best experience - built-in filesystem |
+| **Claude Desktop** | ✅ With Filesystem MCP | ✅ Full support | Requires MCP for file creation |
+| **Claude Web** | ⚠️ Guidance only | ✅ Full support | Can't create files, copy/paste instead |
+| **Claude API** | N/A | ✅ Full support | Use CLI tools |
+
 ## Project Structure
 
 ```
@@ -118,7 +149,7 @@ skills-builder/
 A skill spec is a JSON file following Claude's requirements:
 
 ### Required Fields
-- **name** - Short skill name (max 64 chars, use gerund form)
+- **name** - Short skill name (max 64 chars, use gerund form, lowercase-with-hyphens)
 - **description** - What it does + when to use it (max 1024 chars)
 - **triggers** - Activation phrases (≥2)
 - **inputs** - Expected inputs (files, text, etc.)
@@ -141,6 +172,7 @@ The Skills Builder automatically enforces/suggests:
 
 ### Naming & Description
 - ✅ Names use gerund form: "Processing PDFs" not "PDF Processor"
+- ✅ Names are lowercase-with-hyphens for upload compatibility
 - ✅ Descriptions include both WHAT and WHEN
 - ✅ Active voice without first/second person
 - ✅ Character limits enforced (64 name, 1024 description)
@@ -239,10 +271,13 @@ Place new templates in `templates/` and reference them in scaffold.py.
 
 **Best practice warnings**: These are suggestions, not errors. Your skill will work, but following the suggestions improves quality.
 
+**Filesystem MCP not working**: Make sure the path in your config points to a directory where you want skills generated.
+
 ## Learn More
 
 - [Claude Skills Documentation](https://docs.anthropic.com/claude/docs/agents-and-tools/agent-skills/overview)
 - [Official Best Practices](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/best-practices)
+- [Filesystem MCP Server](https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem)
 - [CLAUDE_BEST_PRACTICES.md](./CLAUDE_BEST_PRACTICES.md) - Full reference
 - [MASTER_KNOWLEDGE.md](./MASTER_KNOWLEDGE.md) - Complete technical reference
 - [Skill Spec Examples](./examples/)
@@ -259,6 +294,7 @@ This builder is specifically designed for Claude Skills with:
 - ✅ Code execution environment awareness
 - ✅ Real best practice warnings during validation
 - ✅ **Pre-packaged as a Claude Skill** - Use Claude to build skills!
+- ✅ **Works in Claude Code out of the box**
 
 ## Contributing
 
@@ -284,7 +320,7 @@ limitations under the License.
 
 **Ready to build Claude-compliant skills?**
 
-**Interactive (Skill):** Upload `skills-builder-skill.zip` and ask Claude to help you build!
+**Interactive (Skill):** Upload `skills-builder-skill.zip` to Claude Code (works instantly) or Claude Desktop (with Filesystem MCP)
 
 **CLI (Automation):**
 ```bash
