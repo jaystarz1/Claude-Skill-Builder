@@ -20,7 +20,34 @@ The Skills Builder helps you create custom Claude Skills that comply with [Anthr
 ✅ **Feedback loop patterns**: Built-in validation workflows  
 ✅ **Under 500-line SKILL.md**: Automatic warnings for length
 
-## Quick Start
+## Two Ways to Use This
+
+### Option 1: Use as a Claude Skill (Recommended for Interactive Use)
+
+Upload the Skills Builder as a skill to Claude, then ask Claude to help you build skills!
+
+**Download and upload:**
+1. Download [`skills-builder-skill.zip`](./skills-builder-skill.zip)
+2. Open Claude (web, desktop, or mobile)
+3. Go to Settings → Capabilities → Skills
+4. Enable "Code execution and file creation"
+5. Click "Upload skill"
+6. Select `skills-builder-skill.zip`
+
+**Then use it:**
+```
+"Help me build a skill for analyzing spreadsheets"
+"Create a skill that processes PDFs"
+"I want to build a custom skill for my workflow"
+```
+
+Claude will guide you through the process, validate your spec, generate files, and package everything for upload.
+
+### Option 2: Use as Command-Line Tools (Recommended for Automation)
+
+Clone and use the Python CLI directly for automation and CI/CD workflows.
+
+## Quick Start (CLI)
 
 ### 1. Clone the repository
 
@@ -36,7 +63,7 @@ See `examples/best-practices/skill.spec.json` for a complete example following a
 ### 3. Validate your spec
 
 ```bash
-python -m code.cli validate --spec examples/best-practices/skill.spec.json
+python3 -m code.cli validate --spec examples/best-practices/skill.spec.json
 ```
 
 This checks:
@@ -47,19 +74,19 @@ This checks:
 ### 4. Generate the skill
 
 ```bash
-python -m code.cli new --spec examples/best-practices/skill.spec.json --out dist/
+python3 -m code.cli new --spec examples/best-practices/skill.spec.json --out dist/
 ```
 
 ### 5. Package for upload
 
 ```bash
-python -m code.cli pack --dir dist/analyzing-spreadsheets --out dist/analyzing-spreadsheets.zip
+python3 -m code.cli pack --dir dist/analyzing-spreadsheets --out dist/analyzing-spreadsheets.zip
 ```
 
 ### 6. Upload to Claude
 
 1. Open Claude (web, desktop, or mobile)
-2. Go to Settings → Skills
+2. Go to Settings → Capabilities → Skills
 3. Click "Upload Skill"
 4. Select your .zip file
 5. Test with one of your example triggers
@@ -68,21 +95,22 @@ python -m code.cli pack --dir dist/analyzing-spreadsheets --out dist/analyzing-s
 
 ```
 skills-builder/
-├─ CLAUDE_BEST_PRACTICES.md  # Anthropic's official guidelines
-├─ MASTER_KNOWLEDGE.md        # Complete technical reference
-├─ skill.md                   # Meta-skill for builder orchestration
+├─ skills-builder-skill.zip   # Pre-packaged skill for Claude upload
+├─ CLAUDE_BEST_PRACTICES.md   # Anthropic's official guidelines
+├─ MASTER_KNOWLEDGE.md         # Complete technical reference
+├─ skill.md                    # Meta-skill for builder orchestration
 ├─ code/
-│  ├─ cli.py                  # Command-line interface
-│  ├─ scaffold.py             # Skill generation
-│  ├─ validate.py             # Spec validation + best practices
-│  ├─ pack.py                 # Zip packaging
-│  ├─ schema.py               # JSON schemas with Claude limits
-│  └─ plugins/                # Extensible components
-├─ templates/                 # Generic templates (Claude-compliant)
+│  ├─ cli.py                   # Command-line interface
+│  ├─ scaffold.py              # Skill generation
+│  ├─ validate.py              # Spec validation + best practices
+│  ├─ pack.py                  # Zip packaging
+│  ├─ schema.py                # JSON schemas with Claude limits
+│  └─ plugins/                 # Extensible components
+├─ templates/                  # Generic templates (Claude-compliant)
 ├─ examples/
-│  ├─ minimal/                # Simple example
-│  └─ best-practices/         # Full-featured example
-└─ dist/                      # Generated skills
+│  ├─ minimal/                 # Simple example
+│  └─ best-practices/          # Full-featured example
+└─ dist/                       # Generated skills
 ```
 
 ## Skill Spec Format
@@ -134,12 +162,12 @@ The Skills Builder automatically enforces/suggests:
 - ✅ Validation feedback loop patterns
 - ✅ Helper script organization
 
-## Commands Reference
+## Commands Reference (CLI)
 
 ### validate
 Check a spec file for errors and best practice issues:
 ```bash
-python -m code.cli validate --spec path/to/spec.json
+python3 -m code.cli validate --spec path/to/spec.json
 ```
 
 Output includes:
@@ -149,13 +177,13 @@ Output includes:
 ### new
 Generate a new skill from a spec:
 ```bash
-python -m code.cli new --spec path/to/spec.json --out output_dir/
+python3 -m code.cli new --spec path/to/spec.json --out output_dir/
 ```
 
 ### pack
 Package a skill directory into a .zip:
 ```bash
-python -m code.cli pack --dir skill_folder/ --out skill.zip
+python3 -m code.cli pack --dir skill_folder/ --out skill.zip
 ```
 
 ## Design Principles
@@ -171,16 +199,16 @@ python -m code.cli pack --dir skill_folder/ --out skill.zip
 
 ### Minimal Example
 ```bash
-python -m code.cli validate --spec examples/minimal/skill.spec.json
-python -m code.cli new --spec examples/minimal/skill.spec.json --out dist/
-python -m code.cli pack --dir dist/document-summarizer --out dist/document-summarizer.zip
+python3 -m code.cli validate --spec examples/minimal/skill.spec.json
+python3 -m code.cli new --spec examples/minimal/skill.spec.json --out dist/
+python3 -m code.cli pack --dir dist/summarizing-documents --out dist/summarizing-documents.zip
 ```
 
 ### Best Practices Example (Recommended)
 ```bash
-python -m code.cli validate --spec examples/best-practices/skill.spec.json
-python -m code.cli new --spec examples/best-practices/skill.spec.json --out dist/
-python -m code.cli pack --dir dist/analyzing-spreadsheets --out dist/analyzing-spreadsheets.zip
+python3 -m code.cli validate --spec examples/best-practices/skill.spec.json
+python3 -m code.cli new --spec examples/best-practices/skill.spec.json --out dist/
+python3 -m code.cli pack --dir dist/analyzing-spreadsheets --out dist/analyzing-spreadsheets.zip
 ```
 
 ## Extending the Builder
@@ -203,7 +231,7 @@ Place new templates in `templates/` and reference them in scaffold.py.
 
 ## Troubleshooting
 
-**Import errors**: Make sure you're running from the `skills-builder` directory.
+**Import errors**: Make sure you're running from the repository root directory.
 
 **Template rendering issues**: Check that your spec has all required fields.
 
@@ -230,6 +258,7 @@ This builder is specifically designed for Claude Skills with:
 - ✅ MCP tool integration
 - ✅ Code execution environment awareness
 - ✅ Real best practice warnings during validation
+- ✅ **Pre-packaged as a Claude Skill** - Use Claude to build skills!
 
 ## Contributing
 
@@ -255,9 +284,12 @@ limitations under the License.
 
 **Ready to build Claude-compliant skills?**
 
+**Interactive (Skill):** Upload `skills-builder-skill.zip` and ask Claude to help you build!
+
+**CLI (Automation):**
 ```bash
 # Start with the best practices example
-python -m code.cli validate --spec examples/best-practices/skill.spec.json
-python -m code.cli new --spec examples/best-practices/skill.spec.json --out dist/
-python -m code.cli pack --dir dist/analyzing-spreadsheets --out dist/analyzing-spreadsheets.zip
+python3 -m code.cli validate --spec examples/best-practices/skill.spec.json
+python3 -m code.cli new --spec examples/best-practices/skill.spec.json --out dist/
+python3 -m code.cli pack --dir dist/analyzing-spreadsheets --out dist/analyzing-spreadsheets.zip
 ```
