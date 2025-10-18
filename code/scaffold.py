@@ -29,7 +29,7 @@ def scaffold_skill(spec_path: str, output_dir: str) -> Path:
         skill_template = f.read()
     
     skill_md = render(skill_template, spec)
-    (skill_dir / "skill.md").write_text(skill_md)
+    (skill_dir / "SKILL.md").write_text(skill_md)  # CRITICAL: Must be uppercase SKILL.md for Claude
     
     # 2. Create templates directory and render output contract
     templates_output_dir = skill_dir / "templates"

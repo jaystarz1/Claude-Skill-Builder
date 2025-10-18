@@ -25,6 +25,7 @@ A comprehensive skill-builder that creates production-ready Claude Skills follow
 
 ## Ground Rules
 - Follow ALL Anthropic specifications (64-char names, 1024-char descriptions)
+- **CRITICAL**: Generated skills MUST use `SKILL.md` (uppercase) - Claude requires this exact filename
 - **CRITICAL**: Skill names in SKILL.md YAML must be lowercase-with-hyphens-only (e.g., 'processing-pdfs', 'analyzing-data')
 - **CRITICAL**: Skill names CANNOT contain reserved words: 'claude', 'anthropic', 'ai'
 - **CRITICAL**: ALL filenames must be lowercase (SKILL.md, README.md are exceptions)
@@ -173,9 +174,17 @@ zip_name = '[skill-name].zip'
 with zipfile.ZipFile(str(skill_dir / zip_name), 'w', zipfile.ZIP_DEFLATED) as zipf:
     for file_path in skill_dir.rglob('*'):
         if file_path.is_file() and '.git' not in str(file_path) and not str(file_path).endswith('.zip'):
-            arcname = file_path.relative_to(skill_dir)
-            zipf.write(file_path, arcname)
+            # CRITICAL: Exclude dist/ folder to avoid multiple SKILL.md files
+            if 'dist' not in file_path.parts:
+                arcname = file_path.relative_to(skill_dir)
+                zipf.write(file_path, arcname)
 ```
+
+**CRITICAL ZIP RULES:**
+- ⚠️ **Exactly ONE SKILL.md file** - Claude will reject ZIPs with multiple SKILL.md files
+- ⚠️ **Exclude dist/ folder** - Contains generated skills that would create duplicates
+- ⚠️ **Exclude .git/ folder** - Version control not needed in uploaded skills
+- ⚠️ **Exclude existing .zip files** - Avoid zip-in-zip situations
 
 **Generated Structure:**
 ```
@@ -236,8 +245,10 @@ zip_name = '[skill-name].zip'
 with zipfile.ZipFile(zip_name, 'w', zipfile.ZIP_DEFLATED) as zipf:
     for file_path in skill_dir.rglob('*'):
         if file_path.is_file() and '.git' not in str(file_path) and not str(file_path).endswith('.zip'):
-            arcname = file_path.relative_to(skill_dir)
-            zipf.write(file_path, arcname)
+            # Exclude dist/ folder if it exists (for skills that generate other skills)
+            if 'dist' not in file_path.parts:
+                arcname = file_path.relative_to(skill_dir)
+                zipf.write(file_path, arcname)
 
 print(f'Created: {zip_name}')
 EOF
