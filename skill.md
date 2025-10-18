@@ -17,6 +17,7 @@ A comprehensive skill-builder that creates production-ready Claude Skills follow
 ## Inputs
 - User's description of what the skill should do
 - Workflow/procedures the skill should follow
+- **CRITICAL: Examples of good outputs or use cases** (ALWAYS ASK FOR THESE)
 - Optional: existing skill.spec.json file
 - Optional: reference materials to include
 - Optional: scripts or code to bundle
@@ -25,6 +26,9 @@ A comprehensive skill-builder that creates production-ready Claude Skills follow
 - Follow ALL Anthropic specifications (64-char names, 1024-char descriptions)
 - **CRITICAL**: Skill names in SKILL.md YAML must be lowercase-with-hyphens-only (e.g., 'processing-pdfs', 'analyzing-data')
 - **CRITICAL**: Skill names CANNOT contain reserved words: 'claude', 'anthropic', 'ai'
+- **CRITICAL**: ALL filenames must be lowercase (SKILL.md, README.md are exceptions)
+- **CRITICAL**: ALL folder names must be lowercase (e.g., 'examples/', 'references/', 'code/')
+- **CRITICAL**: Example filenames must be lowercase with hyphens (e.g., 'example-1-posting-grievance.md')
 - Use gerund form for spec names in examples ("Processing PDFs" becomes 'processing-pdfs' in SKILL.md)
 - Descriptions must include WHAT it does AND WHEN to use it
 - Always use forward slashes in paths (never backslashes)
@@ -69,7 +73,8 @@ This skill has access to comprehensive knowledge about Claude Skills:
 3. Determine inputs the skill needs
 4. Establish guardrails and constraints
 5. Define expected output format
-6. Identify any reference materials or scripts needed
+6. **CRITICAL: Ask about examples** - Does the user have example outputs, documents, or use cases?
+7. Identify any reference materials or scripts needed
 
 **Key Questions:**
 - What specific task does this skill perform?
@@ -78,6 +83,8 @@ This skill has access to comprehensive knowledge about Claude Skills:
 - What rules must it follow? (guardrails)
 - What's the step-by-step procedure?
 - What should the output look like?
+- **Do you have examples of good outputs/documents this skill should produce?** (ALWAYS ASK)
+- **Do you have sample inputs or use cases to include as examples?** (ALWAYS ASK)
 - Does it need reference files? (progressive disclosure)
 - Does it need executable scripts? (code helper)
 - Does it need validation? (feedback loops)
@@ -103,11 +110,27 @@ This skill has access to comprehensive knowledge about Claude Skills:
 - MCP tools properly formatted (ServerName:tool_name)?
 
 ### Phase 3: Structure & Organization
-1. Determine if progressive disclosure needed (>500 lines?)
-2. Organize reference files by domain/purpose
-3. Plan code execution strategy (scripts vs generation)
-4. Design validation/feedback loops if needed
-5. Reference MASTER_KNOWLEDGE.md - Progressive Disclosure section
+1. **Create base directory structure** for the skill
+2. **If user provided examples: CREATE examples/ folder** and save each example as a separate file
+3. Determine if progressive disclosure needed (>500 lines?)
+4. Organize reference files by domain/purpose
+5. Plan code execution strategy (scripts vs generation)
+6. Design validation/feedback loops if needed
+7. Reference MASTER_KNOWLEDGE.md - Progressive Disclosure section
+
+**CRITICAL: Examples Folder**
+- **ALWAYS create examples/ folder if user provided ANY examples**
+- Save each example with descriptive filename (example-1-posting-grievance.md)
+- **ALL example filenames MUST be lowercase with hyphens** (no capitals, no underscores, no spaces)
+- Include README.md in examples/ explaining what each example demonstrates
+- Reference examples from SKILL.md so Claude knows they exist
+
+**CRITICAL: Folder and Filename Rules**
+- Folder names: lowercase only (examples/, references/, code/)
+- File names: lowercase-with-hyphens.md (except SKILL.md and README.md)
+- NO capital letters in filenames (SYNOPSIS.md ❌, synopsis.md ✅)
+- NO underscores (example_1.md ❌, example-1.md ✅)
+- NO spaces (example 1.md ❌, example-1.md ✅)
 
 **Organization Patterns:**
 - **Simple skills**: Just SKILL.md
@@ -127,15 +150,23 @@ This skill has access to comprehensive knowledge about Claude Skills:
 - ⚠️ **Warnings** (should fix): Best practice violations, suboptimal patterns
 
 ### Phase 5: Generation
-1. Use `python -m code.cli new` to generate skill
-2. Verify all files created correctly
-3. Check SKILL.md length (<500 lines recommended)
-4. Validate generated content
+1. **Create the skill directory structure**
+2. **If examples were provided: Save them to examples/ folder NOW**
+3. Use `python -m code.cli new` to generate skill (if using CLI tool)
+4. Verify all files created correctly
+5. Check SKILL.md length (<500 lines recommended)
+6. Validate generated content
+7. **Verify examples/ folder exists and contains all provided examples**
 
 **Generated Structure:**
 ```
 skill-name/
 ├── SKILL.md (with YAML frontmatter)
+├── examples/ (CRITICAL: if user provided examples)
+│   ├── README.md (explains what each example shows)
+│   ├── example-1-[descriptive-name].md
+│   ├── example-2-[descriptive-name].md
+│   └── example-N-[descriptive-name].md
 ├── templates/ (if output contract includes templates)
 ├── reference/ (if progressive disclosure used)
 ├── code/ (if code helper enabled)
@@ -274,6 +305,10 @@ Before finalizing any skill:
 - [ ] Name is ≤ 64 chars
 - [ ] **Name is lowercase-with-hyphens-only (e.g., 'processing-pdfs')**
 - [ ] **Name does NOT contain 'claude', 'anthropic', or 'ai'**
+- [ ] **ALL folder names are lowercase (examples/, references/, code/)**
+- [ ] **ALL filenames are lowercase-with-hyphens (except SKILL.md, README.md)**
+- [ ] **NO capital letters in filenames (SYNOPSIS.md ❌, synopsis.md ✅)**
+- [ ] **NO underscores or spaces in filenames**
 - [ ] Spec uses gerund form for display ("Processing PDFs")
 - [ ] Description is ≤ 1024 chars, includes WHAT + WHEN
 - [ ] At least 2 triggers defined
