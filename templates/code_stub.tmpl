@@ -1,0 +1,9 @@
+from typing import Dict, List
+
+def validate_inputs(payload: Dict, required: List[str]) -> List[str]:
+    """Check if all required fields are present in payload."""
+    return [f"Missing: {r}" for r in required if not payload.get(r)]
+
+def postprocess(md: str) -> str:
+    """Clean up markdown output."""
+    return "\n".join(line.rstrip() for line in md.splitlines())

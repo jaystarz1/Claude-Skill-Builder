@@ -1,0 +1,101 @@
+{
+  "name": "Analyzing Spreadsheets",
+  "description": "Analyzes Excel and CSV files to extract insights, identify patterns, and generate summary reports. Use when you need to understand data structure, find trends, or create data-driven recommendations.",
+  "triggers": [
+    "Analyze this spreadsheet",
+    "What patterns are in this data?",
+    "Give me insights from this Excel file"
+  ],
+  "inputs": [
+    "Spreadsheet file (Excel .xlsx or CSV)",
+    "Optional: specific columns or metrics to focus on",
+    "Optional: date range to analyze"
+  ],
+  "guardrails": [
+    "Only analyze data actually present in the file",
+    "Do not make assumptions about missing values without noting them",
+    "Flag any data quality issues (duplicates, outliers, inconsistencies)",
+    "Preserve exact numbers from the source file",
+    "Note when sample sizes are too small for confident conclusions"
+  ],
+  "procedure": [
+    "Load and parse the spreadsheet file",
+    "Inspect data structure (columns, data types, row count)",
+    "Identify key metrics and dimensions",
+    "Calculate summary statistics (mean, median, trends)",
+    "Detect patterns, correlations, and anomalies",
+    "Generate visualizations if helpful",
+    "Organize findings according to output contract"
+  ],
+  "output_contract": {
+    "title": "Spreadsheet Analysis Report",
+    "sections": [
+      {
+        "heading": "Data Overview",
+        "required": true,
+        "body_hint": "Brief summary: row count, column names, date range, file structure"
+      },
+      {
+        "heading": "Key Metrics",
+        "required": true,
+        "body_hint": "Primary statistics and aggregations relevant to the data"
+      },
+      {
+        "heading": "Patterns & Trends",
+        "required": true,
+        "body_hint": "Notable patterns, correlations, or trends observed in the data"
+      },
+      {
+        "heading": "Data Quality Notes",
+        "required": true,
+        "body_hint": "Any issues found: missing values, duplicates, outliers, inconsistencies"
+      },
+      {
+        "heading": "Recommendations",
+        "required": false,
+        "body_hint": "Actionable insights or suggested next steps based on the analysis"
+      }
+    ],
+    "tables": [
+      {
+        "name": "Summary Statistics",
+        "columns": ["Metric", "Value", "Notes"]
+      }
+    ]
+  },
+  "example_triggers": [
+    "Analyze the sales data in this Excel file",
+    "What trends do you see in this CSV?",
+    "Give me a summary of this spreadsheet's key metrics"
+  ],
+  "reference_files": [
+    {
+      "path": "reference/common-patterns.md",
+      "purpose": "Common data patterns and how to interpret them"
+    },
+    {
+      "path": "reference/visualization-guide.md",
+      "purpose": "When and how to create visualizations"
+    }
+  ],
+  "code_helper": {
+    "enabled": true,
+    "scripts": [
+      {
+        "path": "code/analyze_spreadsheet.py",
+        "purpose": "Parse and analyze spreadsheet files",
+        "execution_mode": "execute"
+      },
+      {
+        "path": "code/validate_analysis.py",
+        "purpose": "Validate analysis results for accuracy",
+        "execution_mode": "execute"
+      }
+    ]
+  },
+  "validation": {
+    "feedback_loop": true,
+    "validator_script": "code/validate_analysis.py"
+  },
+  "mcp_tools": []
+}

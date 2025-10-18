@@ -1,0 +1,7 @@
+# {{ title }}
+
+{% for s in sections -%}
+## {{ s.heading }}
+{% if s.body_hint %}_{{ s.body_hint }}_{% endif %}
+
+{% endfor %}

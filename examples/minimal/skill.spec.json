@@ -1,0 +1,62 @@
+{
+  "name": "Document Summarizer",
+  "purpose": "Extract key points and insights from uploaded documents in a structured format",
+  "triggers": [
+    "Summarize this document",
+    "Give me the key points",
+    "What are the main takeaways"
+  ],
+  "inputs": [
+    "Document file (PDF, TXT, DOCX)",
+    "Optional: specific aspects to focus on",
+    "Optional: desired level of detail"
+  ],
+  "guardrails": [
+    "Only summarize content actually present in the document",
+    "Do not add personal opinions or external information",
+    "Preserve critical details and context",
+    "Flag ambiguous or unclear sections rather than guessing"
+  ],
+  "procedure": [
+    "Read and parse the uploaded document",
+    "Identify the document type and structure",
+    "Extract main themes, arguments, and key facts",
+    "Organize findings into the output contract sections",
+    "Validate that all claims are sourced from the document"
+  ],
+  "output_contract": {
+    "title": "Document Summary",
+    "sections": [
+      {
+        "heading": "Overview",
+        "required": true,
+        "body_hint": "Brief 2-3 sentence summary of the entire document"
+      },
+      {
+        "heading": "Key Points",
+        "required": true,
+        "body_hint": "Bulleted list of main findings or arguments"
+      },
+      {
+        "heading": "Important Details",
+        "required": true,
+        "body_hint": "Facts, figures, dates, or specifics worth noting"
+      },
+      {
+        "heading": "Recommendations or Conclusions",
+        "required": false,
+        "body_hint": "If present in the document"
+      }
+    ],
+    "tables": []
+  },
+  "example_triggers": [
+    "Summarize this research paper",
+    "What are the key points in this contract?",
+    "Give me an overview of this report"
+  ],
+  "code_helper": {
+    "enabled": false,
+    "required_fields": []
+  }
+}

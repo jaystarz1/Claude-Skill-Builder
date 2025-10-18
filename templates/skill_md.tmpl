@@ -1,0 +1,108 @@
+---
+name: {{ name }}
+description: {{ description }}
+---
+
+# {{ name }}
+
+## When to use
+{% for t in triggers -%}
+- {{ t }}
+{% endfor %}
+
+## Inputs
+{% for i in inputs -%}
+- {{ i }}
+{% endfor %}
+
+## Ground rules
+{% for g in guardrails -%}
+- {{ g }}
+{% endfor %}
+
+## Procedure
+{% for s in procedure -%}
+{{ loop.index }}. {{ s }}
+{% endfor %}
+
+{% if validation.feedback_loop -%}
+## Validation & Feedback Loop
+{% if validation.validator_script -%}
+After generating output:
+1. Run `{{ validation.validator_script }}` to validate
+2. If validation fails, review errors and fix issues
+3. Repeat validation until passing
+4. Only proceed after successful validation
+{% else -%}
+1. Generate output following the procedure above
+2. Review output against ground rules
+3. If issues found, revise and repeat validation
+4. Proceed only after validation passes
+{% endif -%}
+
+{% endif -%}
+## Output format
+# {{ output_contract.title }}
+
+{% for s in output_contract.sections -%}
+## {{ s.heading }}{% if s.required %} (Required){% endif %}
+
+{% if s.body_hint -%}
+{{ s.body_hint }}
+{% endif -%}
+
+{% endfor -%}
+
+{% if output_contract.tables and output_contract.tables|length > 0 -%}
+### Tables
+{% for t in output_contract.tables -%}
+**{{ t.name }}**
+
+| {% for col in t.columns %}{{ col }} | {% endfor %}
+
+|{% for col in t.columns %} --- |{% endfor %}
+
+{% endfor -%}
+{% endif -%}
+
+## Example triggers
+{% for e in example_triggers -%}
+- {{ e }}
+{% endfor %}
+
+{% if mcp_tools and mcp_tools|length > 0 -%}
+## MCP Tools
+This skill uses the following MCP tools:
+{% for tool in mcp_tools -%}
+- `{{ tool }}`
+{% endfor %}
+
+{% endif -%}
+{% if reference_files and reference_files|length > 0 -%}
+## Reference Materials
+{% for ref in reference_files -%}
+- `{{ ref.path }}` - {{ ref.purpose }}
+{% endfor %}
+
+{% endif -%}
+{% if code_helper.enabled -%}
+## Helper Scripts
+{% if code_helper.scripts and code_helper.scripts|length > 0 -%}
+{% for script in code_helper.scripts -%}
+- `{{ script.path }}` - {{ script.purpose }}
+{% if script.execution_mode == 'execute' -%}
+  - Usage: Run this script to {{ script.purpose }}
+{% else -%}
+  - Usage: Reference this script for implementation details
+{% endif -%}
+{% endfor -%}
+{% else -%}
+Helper code is available in the `code/` directory.
+{% endif -%}
+
+{% endif -%}
+## Safety & Confidentiality
+- Redact non-essential PII
+- Do not fabricate sources or facts beyond provided materials
+- Follow all ground rules strictly
+- If uncertain, ask for clarification rather than making assumptions

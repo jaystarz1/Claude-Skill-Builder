@@ -1,0 +1,36 @@
+# {{ name }}
+
+## Overview
+{{ purpose }}
+
+## How to use this skill in Claude
+
+1. **Upload this folder** (or the .zip file) to Claude via Settings → Skills → Upload
+2. **Activate the skill** by using one of these trigger phrases:
+{% for t in example_triggers -%}
+   - "{{ t }}"
+{% endfor %}
+
+3. Claude will automatically load this skill when your prompts match the triggers
+
+## What's included
+
+- `skill.md` - The main skill instructions
+- `templates/output_doc.tmpl` - Output format template
+{% if code_helper.enabled -%}
+- `code/helper.py` - Helper functions
+{% endif %}
+
+## Expected inputs
+{% for i in inputs -%}
+- {{ i }}
+{% endfor %}
+
+## Output format
+The skill generates structured output with these sections:
+{% for s in output_contract.sections -%}
+- **{{ s.heading }}**{% if s.required %} (required){% endif %}
+{% endfor %}
+
+## Need help?
+Visit https://docs.anthropic.com/claude/docs/skills for more information on Claude Skills.
