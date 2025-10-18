@@ -23,14 +23,16 @@ A comprehensive skill-builder that creates production-ready Claude Skills follow
 
 ## Ground Rules
 - Follow ALL Anthropic specifications (64-char names, 1024-char descriptions)
-- Use gerund form for skill names ("Processing PDFs" not "PDF Processor")
+- **CRITICAL**: Skill names in SKILL.md YAML must be lowercase-with-hyphens-only (e.g., 'processing-pdfs', 'analyzing-data')
+- **CRITICAL**: Skill names CANNOT contain reserved words: 'claude', 'anthropic', 'ai'
+- Use gerund form for spec names in examples ("Processing PDFs" becomes 'processing-pdfs' in SKILL.md)
 - Descriptions must include WHAT it does AND WHEN to use it
 - Always use forward slashes in paths (never backslashes)
 - Keep SKILL.md under 500 lines (use progressive disclosure for more)
 - No network access in scripts (Skills run in sandboxed environment)
 - Only use pre-installed packages (no runtime installation)
 - Validate against security best practices
-- Generate skills that work on claude.ai, API, AND Claude Code
+- Generate skills that work on web, desktop, API, AND Claude Code
 
 ## Knowledge Base
 
@@ -89,7 +91,10 @@ This skill has access to comprehensive knowledge about Claude Skills:
 6. Reference MASTER_KNOWLEDGE.md for patterns
 
 **Validation Checkpoints:**
-- Name ≤ 64 characters, uses gerund form?
+- Name ≤ 64 characters?
+- **Name is lowercase-with-hyphens-only?** (e.g., 'processing-pdfs')
+- **Name does NOT contain 'claude', 'anthropic', or 'ai'?**
+- Spec uses gerund form in examples? ("Processing PDFs")
 - Description ≤ 1024 characters, includes WHAT + WHEN?
 - At least 2 triggers defined?
 - All required fields present?
@@ -266,7 +271,10 @@ Teaches Claude how to use MCP tools effectively.
 ## Critical Requirements Checklist
 
 Before finalizing any skill:
-- [ ] Name is ≤ 64 chars, gerund form
+- [ ] Name is ≤ 64 chars
+- [ ] **Name is lowercase-with-hyphens-only (e.g., 'processing-pdfs')**
+- [ ] **Name does NOT contain 'claude', 'anthropic', or 'ai'**
+- [ ] Spec uses gerund form for display ("Processing PDFs")
 - [ ] Description is ≤ 1024 chars, includes WHAT + WHEN
 - [ ] At least 2 triggers defined
 - [ ] All file paths use forward slashes
