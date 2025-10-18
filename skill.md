@@ -1,6 +1,6 @@
 ---
-name: Building Claude Skills
-description: Creates world-class Claude Skills following Anthropic's official specifications and best practices. Use when building custom Skills for claude.ai, Claude Code, or the API - handles validation, generation, and packaging.
+name: building-skills
+description: Creates world-class agent Skills following Anthropic's official specifications and best practices. Use when building custom Skills for web, desktop, or API - handles validation, generation, and packaging.
 ---
 
 # Building Claude Skills
