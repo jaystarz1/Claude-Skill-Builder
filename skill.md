@@ -10,6 +10,7 @@ A comprehensive skill-builder that creates production-ready Claude Skills follow
 ## When to Use
 - User wants to create a new Claude Skill
 - User says "build a skill", "create a skill", "make a skill"
+- **User wants to update, modify, or fix an existing skill**
 - User wants to validate or improve an existing skill
 - User needs to package a skill for upload
 - User asks about Skills best practices or architecture
@@ -152,12 +153,13 @@ This skill has access to comprehensive knowledge about Claude Skills:
 ### Phase 5: Generation & Packaging
 1. **Create the skill directory structure**
 2. **If examples were provided: Save them to examples/ folder NOW**
-3. Use `python -m code.cli new` to generate skill (if using CLI tool)
-4. Verify all files created correctly
-5. Check SKILL.md length (<500 lines recommended)
-6. Validate generated content
-7. **Verify examples/ folder exists and contains all provided examples**
-8. **AUTOMATICALLY CREATE ZIP FILE** - Package the skill immediately after generation
+3. **Create UPDATING.md file** - Critical reminder about ZIP recreation
+4. Use `python -m code.cli new` to generate skill (if using CLI tool)
+5. Verify all files created correctly
+6. Check SKILL.md length (<500 lines recommended)
+7. Validate generated content
+8. **Verify examples/ folder exists and contains all provided examples**
+9. **AUTOMATICALLY CREATE ZIP FILE** - Package the skill immediately after generation
 
 **ZIP File Creation:**
 After creating all skill files, automatically create a ZIP file using the filesystem:write_file tool with this Python script pattern:
@@ -180,6 +182,7 @@ with zipfile.ZipFile(str(skill_dir / zip_name), 'w', zipfile.ZIP_DEFLATED) as zi
 skill-name/
 ├── SKILL.md (with YAML frontmatter)
 ├── skill-name.zip ⭐ (AUTOMATICALLY CREATED)
+├── UPDATING.md ⭐ (CRITICAL REMINDER)
 ├── examples/ (CRITICAL: if user provided examples)
 │   ├── README.md (explains what each example shows)
 │   ├── example-1-[descriptive-name].md
@@ -189,6 +192,66 @@ skill-name/
 ├── reference/ (if progressive disclosure used)
 ├── code/ (if code helper enabled)
 └── README.md
+```
+
+**UPDATING.md File:**
+Every skill MUST include an UPDATING.md file with this content:
+```markdown
+# 🔴 UPDATING THIS SKILL
+
+## CRITICAL: Changes Require New ZIP Upload
+
+If you modify ANY file in this skill, you MUST:
+
+1. **Recreate the ZIP file**
+2. **Upload the new ZIP to claude.ai**
+
+### Why?
+The skill files on disk ≠ the skill Claude is using.
+Claude loads skills from uploaded ZIP files, not from your filesystem.
+
+### When to Create New ZIP?
+- ✅ Changed SKILL.md (even typos)
+- ✅ Modified examples/
+- ✅ Updated references/
+- ✅ Fixed code/
+- ✅ ANY file change at all
+
+### How to Recreate ZIP
+
+#### Option 1: Ask Claude (Easiest)
+```
+"Create a new ZIP for this skill"
+```
+
+#### Option 2: Python Script (Manual)
+```bash
+python3 << 'EOF'
+import zipfile
+from pathlib import Path
+
+skill_dir = Path('.')
+zip_name = '[skill-name].zip'
+
+with zipfile.ZipFile(zip_name, 'w', zipfile.ZIP_DEFLATED) as zipf:
+    for file_path in skill_dir.rglob('*'):
+        if file_path.is_file() and '.git' not in str(file_path) and not str(file_path).endswith('.zip'):
+            arcname = file_path.relative_to(skill_dir)
+            zipf.write(file_path, arcname)
+
+print(f'Created: {zip_name}')
+EOF
+```
+
+### How to Upload
+
+1. Go to Settings → Capabilities in claude.ai
+2. Remove old version of this skill
+3. Click "Upload skill"
+4. Select the NEW ZIP file
+5. Test your changes
+
+**Changes take effect immediately after upload.**
 ```
 
 ### Phase 6: Packaging & Deployment
@@ -209,6 +272,50 @@ skill-name/
 3. Observe Claude's usage patterns
 4. Iterate based on feedback
 5. Reference MASTER_KNOWLEDGE.md - Development Best Practices
+
+## Updating Existing Skills
+
+When the user wants to modify, fix, or improve an existing skill:
+
+### Update Procedure
+1. **Identify what needs to change** - Ask user for specific changes needed
+2. **Locate the skill directory** - Find the skill folder on filesystem
+3. **Make the requested changes** - Edit SKILL.md, examples, references as needed
+4. **AUTOMATICALLY RECREATE ZIP FILE** - Always create fresh ZIP after any changes
+5. **Remind user to upload new ZIP** - Changes won't take effect until uploaded
+
+### Changes That Require ZIP Recreation
+- ✅ **ANY change to SKILL.md** - Procedure updates, wording fixes, new sections
+- ✅ **ANY change to examples/** - New examples, editing existing examples
+- ✅ **ANY change to references/** - Updated guides, new reference files
+- ✅ **ANY change to code/** - Script fixes, new helper scripts
+- ✅ **Even tiny typo fixes** - ALL changes need new ZIP
+
+### Update Output Format
+
+# Skill Update Report
+
+## Changes Made
+- [List specific changes made]
+- [Files modified]
+- [New files added]
+
+## Updated ZIP File
+✅ **`skill-name.zip` has been recreated with all changes**
+
+## 🔴 CRITICAL: Upload Required
+**Your changes will NOT take effect until you upload the new ZIP file!**
+
+### To Apply Changes:
+1. Go to Settings → Capabilities in claude.ai
+2. Remove the old version of this skill
+3. Click "Upload skill"
+4. Select the NEW `skill-name.zip` file
+5. Test the updated skill
+
+**The skill files on disk ≠ the skill Claude Desktop is using**
+
+Changes are only applied when you upload the new ZIP file.
 
 ## Output Format
 
@@ -282,6 +389,9 @@ Try these example triggers:
 - "Build a skill for [specific task]"
 - "Create a custom skill that [does something]"
 - "Help me build a skill for my [workflow]"
+- **"Update the [skill-name] skill to add/fix [something]"**
+- **"Fix a typo in the synopsis skill"**
+- **"Add a new example to the [skill-name] skill"**
 - "Validate my skill spec"
 - "Package my skill for upload"
 - "How should I structure a skill for [use case]?"

@@ -194,6 +194,57 @@ The Skills Builder automatically enforces/suggests:
 - ✅ Validation feedback loop patterns
 - ✅ Helper script organization
 
+## Updating Skills
+
+**CRITICAL:** After making ANY changes to a skill, you MUST create a new ZIP file and upload it to claude.ai for the changes to take effect.
+
+### Why?
+The skill files on your disk ≠ the skill Claude Desktop is using. Claude loads skills from the uploaded ZIP file, not from your filesystem.
+
+### When Do You Need to Upload a New ZIP?
+- ✅ **ANY change to SKILL.md** - Fixes, updates, new sections
+- ✅ **ANY change to examples/** - New examples, edits
+- ✅ **ANY change to references/** - Updated reference files  
+- ✅ **ANY change to code/** - Script fixes
+- ✅ **Even tiny typo fixes** - ALL changes require new ZIP
+
+### How to Update a Skill
+
+#### Option 1: Using Skills-Builder Skill (Recommended)
+```
+"Update the synopsis skill to fix the typo in paragraph 3"
+"Add a new example to the spreadsheet skill"
+```
+
+The skills-builder will:
+1. Make the requested changes
+2. **Automatically recreate the ZIP file**
+3. Remind you to upload the new ZIP
+
+#### Option 2: Manual Update (CLI)
+```bash
+# 1. Make your changes to the skill files
+vim dist/my-skill/SKILL.md
+
+# 2. Recreate the ZIP
+python3 -m code.cli pack --dir dist/my-skill --out dist/my-skill.zip
+
+# 3. Upload to claude.ai (see below)
+```
+
+### Uploading the Updated ZIP
+
+1. Go to Settings → Capabilities in claude.ai
+2. **Remove the old version** of the skill
+3. Click "Upload skill"
+4. Select the **NEW** ZIP file
+5. Test your changes
+
+### Changes Take Effect Immediately
+Once you upload the new ZIP, Claude will use the updated version immediately in new conversations. Existing conversations may need to be restarted.
+
+---
+
 ## Commands Reference (CLI)
 
 ### validate
