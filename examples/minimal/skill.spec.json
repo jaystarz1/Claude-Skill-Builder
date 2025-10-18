@@ -1,6 +1,6 @@
 {
-  "name": "Document Summarizer",
-  "purpose": "Extract key points and insights from uploaded documents in a structured format",
+  "name": "Summarizing Documents",
+  "description": "Extracts key points and insights from uploaded documents in a structured format. Use when you need to understand the main themes, arguments, and conclusions of a document without reading it in full.",
   "triggers": [
     "Summarize this document",
     "Give me the key points",
@@ -56,7 +56,6 @@
     "Give me an overview of this report"
   ],
   "code_helper": {
-    "enabled": false,
-    "required_fields": []
+    "enabled": false
   }
 }

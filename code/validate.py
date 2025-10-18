@@ -5,7 +5,7 @@ Checks structural integrity and Claude Skills best practices.
 import json
 from pathlib import Path
 from typing import List, Dict, Any
-from schema import validate_best_practices
+from .schema import validate_best_practices
 
 
 def validate_spec(spec_path: str) -> List[str]:
@@ -156,7 +156,7 @@ def validate_spec(spec_path: str) -> List[str]:
         if warnings:
             print("⚠️  Best Practice Suggestions:")
             for warning in warnings:
-                print(f"  - {warning}")
+                print(f"  {warning}")
             print("\nNote: These are suggestions, not errors. The spec is valid.")
         else:
             print("✓ No best practice issues found!")

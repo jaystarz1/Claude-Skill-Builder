@@ -4,12 +4,8 @@ Scaffold a new skill from a spec file.
 import json
 from pathlib import Path
 from typing import Dict, Any
-import sys
 
-# Add parent to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from plugins.renderers.jinja_renderer import render
+from .plugins.renderers.jinja_renderer import render
 
 
 def scaffold_skill(spec_path: str, output_dir: str) -> Path:
@@ -25,8 +21,8 @@ def scaffold_skill(spec_path: str, output_dir: str) -> Path:
     skill_dir = Path(output_dir) / skill_name
     skill_dir.mkdir(parents=True, exist_ok=True)
     
-    # Load templates
-    templates_dir = Path(__file__).parent.parent.parent / "templates"
+    # Load templates - go up from code/ to skills-builder/ then to templates/
+    templates_dir = Path(__file__).parent.parent / "templates"
     
     # 1. Render skill.md
     with open(templates_dir / "skill_md.tmpl", 'r') as f:

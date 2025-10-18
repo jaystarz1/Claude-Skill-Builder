@@ -7,10 +7,10 @@ import argparse
 import sys
 from pathlib import Path
 
-# Import our modules
-from scaffold import scaffold_skill
-from validate import validate_spec
-from pack import pack_skill
+# Import our modules with relative imports
+from .scaffold import scaffold_skill
+from .validate import validate_spec
+from .pack import pack_skill
 
 
 def main():

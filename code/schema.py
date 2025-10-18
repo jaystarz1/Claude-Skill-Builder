@@ -259,12 +259,16 @@ def validate_best_practices(spec: dict) -> list:
     # === NAME VALIDATION ===
     name = spec.get("name", "")
     if name:
-        # Check gerund form (should end with -ing, -ting, -ring, -ning, etc.)
-        gerund_endings = ["ing", "ting", "ring", "ning", "ding", "ping", "ming", "sing", "king", "ling"]
-        if not any(name.lower().endswith(ending) for ending in gerund_endings):
+        # Check gerund form (should contain a word ending with -ing)
+        # Split on spaces and check if at least one word ends with 'ing'
+        words = name.split()
+        has_gerund = any(word.lower().endswith('ing') for word in words)
+        
+        if not has_gerund:
             warnings.append(
-                f"⚠️  NAME: Consider using gerund form: '{name}' → '{name}ing' or similar. "
+                f"⚠️  NAME: Consider using gerund form (verb + -ing). "
                 f"Examples: 'Processing PDFs', 'Analyzing Spreadsheets', 'Managing Databases'. "
+                f"Current: '{name}'. "
                 f"See: MASTER_KNOWLEDGE.md - Anatomy of a Skill"
             )
         
