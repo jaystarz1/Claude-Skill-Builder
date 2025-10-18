@@ -149,7 +149,7 @@ This skill has access to comprehensive knowledge about Claude Skills:
 - ❌ **Errors** (must fix): Missing fields, limit violations, invalid formats
 - ⚠️ **Warnings** (should fix): Best practice violations, suboptimal patterns
 
-### Phase 5: Generation
+### Phase 5: Generation & Packaging
 1. **Create the skill directory structure**
 2. **If examples were provided: Save them to examples/ folder NOW**
 3. Use `python -m code.cli new` to generate skill (if using CLI tool)
@@ -157,11 +157,29 @@ This skill has access to comprehensive knowledge about Claude Skills:
 5. Check SKILL.md length (<500 lines recommended)
 6. Validate generated content
 7. **Verify examples/ folder exists and contains all provided examples**
+8. **AUTOMATICALLY CREATE ZIP FILE** - Package the skill immediately after generation
+
+**ZIP File Creation:**
+After creating all skill files, automatically create a ZIP file using the filesystem:write_file tool with this Python script pattern:
+```python
+import zipfile
+from pathlib import Path
+
+skill_dir = Path('[skill-directory-path]')
+zip_name = '[skill-name].zip'
+
+with zipfile.ZipFile(str(skill_dir / zip_name), 'w', zipfile.ZIP_DEFLATED) as zipf:
+    for file_path in skill_dir.rglob('*'):
+        if file_path.is_file() and '.git' not in str(file_path) and not str(file_path).endswith('.zip'):
+            arcname = file_path.relative_to(skill_dir)
+            zipf.write(file_path, arcname)
+```
 
 **Generated Structure:**
 ```
 skill-name/
 ├── SKILL.md (with YAML frontmatter)
+├── skill-name.zip ⭐ (AUTOMATICALLY CREATED)
 ├── examples/ (CRITICAL: if user provided examples)
 │   ├── README.md (explains what each example shows)
 │   ├── example-1-[descriptive-name].md
@@ -205,8 +223,11 @@ skill-name/
 ```
 skill-name/
 ├── SKILL.md
+├── skill-name.zip ⭐ (ready to upload)
 ├── [other files]
 ```
+
+**ZIP File**: `skill-name.zip` has been automatically created and is ready to upload to claude.ai
 
 ## Validation Results
 ### ✅ Passed
