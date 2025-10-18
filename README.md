@@ -245,6 +245,86 @@ Once you upload the new ZIP, Claude will use the updated version immediately in 
 
 ---
 
+## ZIP Creator MCP (Optional Enhancement)
+
+### What is the ZIP Creator MCP?
+The `zip-creator` MCP server is an optional tool that makes creating ZIP files for skills faster and more reliable. It provides a single function call (`zip-creator:create_zip`) instead of running Python scripts.
+
+### Benefits
+- **Faster**: Direct tool call vs running Python script
+- **Simpler**: Single function call with clear parameters  
+- **Reliable**: Handles edge cases and provides detailed feedback
+- **Better UX**: Returns structured response with file count
+- **Automatic**: Skills-builder uses it automatically when available
+
+### Installation (Completely Optional)
+
+**Location**: `/Users/[username]/mcp-servers/zip-creator/`
+
+**Files needed**:
+- `server.py` - MCP server implementation
+- `README.md` - Installation and usage guide
+- `INSTALL.md` - Detailed setup instructions
+
+For full installation instructions, see: [/Users/[username]/mcp-servers/zip-creator/README.md]
+
+**Config** (`claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "zip-creator": {
+      "command": "/opt/homebrew/bin/python3.11",
+      "args": [
+        "-m",
+        "mcp.server.stdio",
+        "/Users/[username]/mcp-servers/zip-creator/server.py"
+      ]
+    }
+  }
+}
+```
+
+### Automatic Fallback
+The skills-builder **always works** even without the ZIP Creator MCP:
+
+1. **Try MCP first**: Attempt `zip-creator:create_zip` tool call
+2. **Detect failure**: Check for "unknown tool" or tool unavailable error  
+3. **Fall back**: Automatically run Python script instead
+4. **User transparency**: Mentions which method was used
+
+### Usage Examples
+
+**With MCP installed:**
+```
+"Create a ZIP for this skill"
+```
+Result: ✅ Instant ZIP creation via MCP tool
+
+**Without MCP:**
+```
+"Create a ZIP for this skill"  
+```
+Result: ✅ ZIP creation via Python script fallback
+
+**Both methods work identically** - the fallback is automatic and transparent.
+
+### Do You Need It?
+
+**You DON'T need it if:**
+- ✅ You're happy with the Python script fallback
+- ✅ You only create skills occasionally
+- ✅ You prefer fewer dependencies
+
+**You might want it if:**
+- ✅ You create skills frequently
+- ✅ You prefer tool-based workflows
+- ✅ You want slightly faster ZIP creation
+- ✅ You like having structured responses
+
+**Bottom line:** The ZIP Creator MCP is a nice-to-have enhancement, not a requirement. The skills-builder works perfectly without it.
+
+---
+
 ## Commands Reference (CLI)
 
 ### validate
