@@ -161,6 +161,7 @@ This skill has access to comprehensive knowledge about Claude Skills:
 7. Validate generated content
 8. **Verify examples/ folder exists and contains all provided examples**
 9. **AUTOMATICALLY CREATE ZIP FILE** - Package the skill immediately after generation
+10. **AUTOMATICALLY SET UP GIT PRE-COMMIT HOOK** - Auto-rebuild ZIP on every commit
 
 **ZIP File Creation:**
 After creating all skill files, automatically create a ZIP file using one of these methods:
@@ -210,12 +211,47 @@ Try Method 1 first. If the tool call fails with "unknown tool" error, automatica
 - ⚠️ **Exclude .git/ folder** - Version control not needed in uploaded skills
 - ⚠️ **Exclude existing .zip files** - Avoid zip-in-zip situations
 
+**Git Pre-Commit Hook Setup:**
+After creating the ZIP file, automatically set up a git pre-commit hook to rebuild the ZIP on every commit:
+
+**Hook Location:** `[skill-directory]/.git/hooks/pre-commit`
+
+**Hook Content:**
+```bash
+#!/bin/bash
+# Auto-rebuild ZIP file when committing changes to skill files
+
+cd "$(git rev-parse --show-toplevel)"
+
+echo "Rebuilding [skill-name].zip..."
+zip -r [skill-name].zip . -x "*.git*" -x "*.claude*" -x "__MACOSX*" -x "*.DS_Store" -q
+
+# Add the updated ZIP to this commit
+git add [skill-name].zip
+
+echo "ZIP file updated and staged for commit"
+```
+
+**Setup Steps:**
+1. Check if `.git/` directory exists in skill folder
+2. If yes: Create `.git/hooks/` directory if it doesn't exist
+3. Write the pre-commit hook file with correct skill name
+4. Make it executable: `chmod +x .git/hooks/pre-commit`
+5. Inform user that auto-rebuild is set up
+
+**Benefits:**
+- ✅ ZIP automatically rebuilds on every `git commit`
+- ✅ Always stays in sync with skill files
+- ✅ No manual ZIP recreation needed during development
+- ✅ ZIP gets committed alongside file changes
+
 **Generated Structure:**
 ```
 skill-name/
 ├── SKILL.md (with YAML frontmatter)
 ├── skill-name.zip ⭐ (AUTOMATICALLY CREATED)
 ├── UPDATING.md ⭐ (CRITICAL REMINDER)
+├── .git/hooks/pre-commit ⭐ (AUTO-REBUILD HOOK - if git repo)
 ├── examples/ (CRITICAL: if user provided examples)
 │   ├── README.md (explains what each example shows)
 │   ├── example-1-[descriptive-name].md
@@ -252,14 +288,22 @@ Claude loads skills from uploaded ZIP files, not from your filesystem.
 
 ### How to Recreate ZIP
 
-#### Option 1: Ask Claude (Easiest - Uses MCP if Available)
+#### Option 1: Git Commit (Automatic - If Git Hook Is Set Up)
+If this skill has a git pre-commit hook installed, the ZIP rebuilds automatically:
+```bash
+git add .
+git commit -m "Your commit message"
+```
+The hook will automatically rebuild the ZIP and add it to your commit. **No manual ZIP creation needed!**
+
+#### Option 2: Ask Claude (Easiest - Uses MCP if Available)
 ```
 "Create a new ZIP for this skill"
 ```
 
 Claude will automatically use the zip-creator MCP tool if it's installed, or fall back to a Python script.
 
-#### Option 2: MCP Tool Directly (If Installed)
+#### Option 3: MCP Tool Directly (If Installed)
 ```
 zip-creator:create_zip(
   directory_path='/absolute/path/to/skill',
@@ -376,10 +420,13 @@ Changes are only applied when you upload the new ZIP file.
 skill-name/
 ├── SKILL.md
 ├── skill-name.zip ⭐ (ready to upload)
+├── .git/hooks/pre-commit ⭐ (auto-rebuild hook - if git repo)
 ├── [other files]
 ```
 
 **ZIP File**: `skill-name.zip` has been automatically created and is ready to upload to claude.ai
+
+**Git Hook**: Pre-commit hook has been set up (if git repo exists) - ZIP will auto-rebuild on every commit
 
 ## Validation Results
 ### ✅ Passed
