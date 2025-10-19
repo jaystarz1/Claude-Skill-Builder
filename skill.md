@@ -1,5 +1,5 @@
 ---
-name: building-skills
+name: skills-builder
 description: Creates world-class agent Skills following Anthropic's official specifications and best practices. Use when building custom Skills for web, desktop, or API - handles validation, generation, and packaging.
 ---
 
@@ -163,7 +163,26 @@ This skill has access to comprehensive knowledge about Claude Skills:
 9. **AUTOMATICALLY CREATE ZIP FILE** - Package the skill immediately after generation
 
 **ZIP File Creation:**
-After creating all skill files, automatically create a ZIP file using the filesystem:write_file tool with this Python script pattern:
+After creating all skill files, automatically create a ZIP file using one of these methods:
+
+**CRITICAL: ZIP Filename Must Match Folder Name**
+The ZIP filename MUST match the skill's folder/directory name + `.zip`
+- If folder is `skills-builder/` → ZIP is `skills-builder.zip`
+- If folder is `generic-synopsis-skill/` → ZIP is `generic-synopsis-skill.zip`
+- NEVER use descriptive names like "skills-builder-v2" or "updated-skill"
+- This ensures only ONE ZIP file exists per skill (overwrites previous)
+
+**Method 1: MCP Tool (Preferred)**
+If the `zip-creator:create_zip` MCP tool is available, use it:
+```
+zip-creator:create_zip(
+  directory_path='[absolute-path-to-skill-directory]',
+  zip_name='[folder-name].zip'
+)
+```
+
+**Method 2: Python Script (Fallback)**
+If the MCP tool is not available, use this Python script:
 ```python
 import zipfile
 from pathlib import Path
@@ -178,7 +197,12 @@ with zipfile.ZipFile(str(skill_dir / zip_name), 'w', zipfile.ZIP_DEFLATED) as zi
             if 'dist' not in file_path.parts:
                 arcname = file_path.relative_to(skill_dir)
                 zipf.write(file_path, arcname)
+
+print(f'✅ Created {zip_name}')
 ```
+
+**Detection Logic:**
+Try Method 1 first. If the tool call fails with "unknown tool" error, automatically fall back to Method 2.
 
 **CRITICAL ZIP RULES:**
 - ⚠️ **Exactly ONE SKILL.md file** - Claude will reject ZIPs with multiple SKILL.md files
@@ -228,12 +252,22 @@ Claude loads skills from uploaded ZIP files, not from your filesystem.
 
 ### How to Recreate ZIP
 
-#### Option 1: Ask Claude (Easiest)
+#### Option 1: Ask Claude (Easiest - Uses MCP if Available)
 ```
 "Create a new ZIP for this skill"
 ```
 
-#### Option 2: Python Script (Manual)
+Claude will automatically use the zip-creator MCP tool if it's installed, or fall back to a Python script.
+
+#### Option 2: MCP Tool Directly (If Installed)
+```
+zip-creator:create_zip(
+  directory_path='/absolute/path/to/skill',
+  zip_name='skill-name.zip'
+)
+```
+
+#### Option 3: Python Script (Always Works)
 ```bash
 python3 << 'EOF'
 import zipfile
@@ -420,6 +454,55 @@ When building skills, always consult:
 - `MASTER_KNOWLEDGE.md` - Complete technical reference
 - `CLAUDE_BEST_PRACTICES.md` - Official guidelines
 - `examples/best-practices/` - Production-ready example
+
+## ZIP Creator MCP Integration
+
+### What is the ZIP Creator MCP?
+The `zip-creator` MCP server provides a tool (`zip-creator:create_zip`) that simplifies ZIP file creation for Skills. It's optional but recommended for faster, more reliable packaging.
+
+### Benefits
+- **Faster**: Direct tool call vs running Python script
+- **Simpler**: Single function call with clear parameters
+- **Reliable**: Handles edge cases and provides detailed feedback
+- **Better UX**: Returns structured response with file count
+
+### Installation (Optional)
+Users can install the zip-creator MCP server to enable automatic ZIP creation:
+
+**Location**: `/Users/[username]/mcp-servers/zip-creator/`
+
+**Files needed**:
+- `server.py` - MCP server implementation
+- `README.md` - Installation and usage guide
+- `INSTALL.md` - Detailed setup instructions
+
+**Config** (`claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "zip-creator": {
+      "command": "/opt/homebrew/bin/python3.11",
+      "args": [
+        "-m",
+        "mcp.server.stdio",
+        "/Users/[username]/mcp-servers/zip-creator/server.py"
+      ]
+    }
+  }
+}
+```
+
+### Fallback Behavior
+The skills-builder ALWAYS works even without the MCP:
+1. **Try MCP first**: Attempt `zip-creator:create_zip` tool call
+2. **Detect failure**: Check for "unknown tool" or tool unavailable error
+3. **Fall back**: Automatically run Python script via bash_tool
+4. **User transparency**: Mention which method was used
+
+### For Skill Users
+- **With MCP**: Just say "Create a ZIP for this skill" - instant, reliable
+- **Without MCP**: Same command works, just uses Python fallback
+- **No action needed**: The fallback is automatic and transparent
 
 ## Common Patterns
 
