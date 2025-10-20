@@ -231,13 +231,60 @@ This skill has access to comprehensive knowledge about Claude Skills:
    - Display to user: "Creating skill at: `{SKILLS_DIR}/{skill-slug}/`"
    - Get user confirmation before proceeding
 
-**Only after ALL checks pass, proceed to Phase 1.**
+**Only after ALL checks pass, proceed to Phase 0.5.**
 
 **Example Path Detection Output:**
 ```
 ✅ Detected skills directory: /Users/alice/skills/
 ✅ Creating skill at: /Users/alice/skills/weather-forecast/
 ```
+
+### Phase 0.5: Claude Code Integration Detection (Optional)
+
+**After detecting skills directory, check for Claude Code installation:**
+
+This step enables automatic symlink creation so skills work in BOTH Claude Desktop AND Claude Code.
+
+1. **Detect Claude Code directory:**
+   ```python
+   from pathlib import Path
+   
+   claude_code_dir = Path.home() / '.claude' / 'skills'
+   has_claude_code = claude_code_dir.exists()
+   ```
+
+2. **Ask user about Claude Code integration (ONLY if Claude Code detected):**
+   ```
+   If claude_code_dir.exists():
+       Ask: "I detected Claude Code installed. Would you like this skill to work automatically in Claude Code? (y/n)"
+       - Yes: Set enable_claude_code_integration = True
+       - No: Set enable_claude_code_integration = False
+   
+   If not claude_code_dir.exists():
+       Set enable_claude_code_integration = False
+       Skip asking (user doesn't have Claude Code)
+   ```
+
+3. **Store preference for this session:**
+   - This preference applies to ALL skills created/updated in this conversation
+   - Don't ask again unless user explicitly requests
+
+4. **Inform user:**
+   ```
+   If enabled:
+       "✅ Claude Code integration enabled - skills will work in both Claude Desktop and Claude Code"
+   
+   If not enabled:
+       "ℹ️  Claude Code integration disabled - skill will work in Claude Desktop only"
+   ```
+
+**What This Does:**
+- If enabled: Auto-creates symlink in `~/.claude/skills/` pointing to `~/skills/` 
+- Changes to skill files automatically reflected in Claude Code
+- No duplication - one source of truth in `~/skills/`
+- Fallback to copy on Windows if symlinks require admin rights
+
+**Only after this check completes, proceed to Phase 1.**
 
 ### Phase 1: Discovery & Specification
 1. Ask user what the skill should do (be specific)
@@ -387,6 +434,64 @@ This skill has access to comprehensive knowledge about Claude Skills:
 
 8. **AUTOMATICALLY SET UP GIT PRE-COMMIT HOOK** (if git repo exists) - Auto-rebuild ZIP on every commit
 
+9. **CLAUDE CODE INTEGRATION** (if enabled in Phase 0.5)
+
+**Create symlink for Claude Code access:**
+
+If user enabled Claude Code integration in Phase 0.5, automatically create symlink:
+
+```python
+from pathlib import Path
+import os
+
+if enable_claude_code_integration:
+    claude_code_dir = Path.home() / '.claude' / 'skills'
+    skill_source = Path(SKILLS_DIR) / skill_slug
+    symlink_target = claude_code_dir / skill_slug
+    
+    # Check if symlink or directory already exists
+    if symlink_target.exists() or symlink_target.is_symlink():
+        # Remove old symlink
+        if symlink_target.is_symlink():
+            symlink_target.unlink()
+            print(f"ℹ️  Removed old symlink: {symlink_target}")
+        else:
+            # If it's a real directory, warn user and skip
+            print(f"⚠️  Found existing directory at {symlink_target}")
+            print(f"   Skipping Claude Code symlink to avoid overwriting")
+            print(f"   To enable integration, remove this directory first")
+            # Skip symlink creation
+            return
+    
+    # Create symlink
+    try:
+        symlink_target.symlink_to(skill_source)
+        print(f"✅ Created Claude Code symlink: {symlink_target} → {skill_source}")
+        print(f"✅ Skill works in both Claude Desktop AND Claude Code!")
+    except OSError as e:
+        # Windows may require admin rights for symlinks
+        print(f"⚠️  Could not create symlink: {e}")
+        print(f"   Fallback: Copying skill to Claude Code directory")
+        # Fallback: copy instead of symlink (for Windows without admin)
+        import shutil
+        shutil.copytree(skill_source, symlink_target, dirs_exist_ok=True)
+        print(f"✅ Copied skill to Claude Code: {symlink_target}")
+        print(f"⚠️  Note: Updates require manual re-copy (no auto-sync)")
+```
+
+**Benefits:**
+- ✅ Skill immediately available in Claude Code
+- ✅ Changes to `~/skills/skill-name/` automatically reflected
+- ✅ No duplication or sync issues (with symlink)
+- ✅ Fallback to copy on Windows if symlinks fail
+
+**User sees:**
+```
+✅ Created skill at: ~/skills/meeting-notes/
+✅ Created Claude Code symlink: ~/.claude/skills/meeting-notes
+✅ Skill works in both Claude Desktop AND Claude Code!
+```
+
 **ZIP File Creation:**
 After creating all skill files, automatically create a ZIP file using one of these methods:
 
@@ -485,7 +590,7 @@ echo "ZIP file updated and staged for commit"
 
 **Generated Structure:**
 ```
-skill-name/
+~/skills/skill-name/
 ├── SKILL.md (with YAML frontmatter)
 ├── skill-name.zip ⭐ (AUTOMATICALLY CREATED)
 ├── UPDATING.md ⭐ (CRITICAL REMINDER)
@@ -499,6 +604,9 @@ skill-name/
 ├── reference/ (if progressive disclosure used)
 ├── code/ (if code helper enabled)
 └── README.md
+
+**Claude Code Integration** (if enabled):
+~/.claude/skills/skill-name/ → symlink to ~/skills/skill-name/
 ```
 
 **UPDATING.md File:**
@@ -616,6 +724,39 @@ When the user wants to modify, fix, or improve an existing skill:
 
 2. **Identify what needs to change** - Ask user for specific changes needed
 
+2.5. **Check Claude Code symlink status** (if Claude Code detected):
+
+**Verify Claude Code symlink exists and is correct:**
+```python
+from pathlib import Path
+
+claude_code_dir = Path.home() / '.claude' / 'skills'
+symlink_target = claude_code_dir / skill_slug
+
+if claude_code_dir.exists():
+    if not symlink_target.exists():
+        # Symlink is missing - offer to create it
+        print(f"ℹ️  Claude Code detected, but no symlink exists for this skill")
+        print(f"   Create symlink to make updates work in Claude Code too? (y/n)")
+        # If yes: create symlink using same logic as Phase 5 Step 9
+    elif symlink_target.is_symlink():
+        # Symlink exists - verify it points to correct location
+        target = symlink_target.resolve()
+        expected = (Path(SKILLS_DIR) / skill_slug).resolve()
+        if target != expected:
+            print(f"⚠️  Symlink points to wrong location: {target}")
+            print(f"   Expected: {expected}")
+            print(f"   Fix symlink? (y/n)")
+            # If yes: remove old symlink and create correct one
+    else:
+        # Directory exists but isn't a symlink
+        print(f"⚠️  Found directory at {symlink_target} (not a symlink)")
+        print(f"   Updates won't sync to Claude Code automatically")
+        print(f"   Tip: Remove directory and run update again to create symlink")
+```
+
+**Result:** Updates to skills automatically work in Claude Code if symlink exists
+
 3. **Read existing skill files:**
    ```
    filesystem:read_text_file(path="{SKILLS_DIR}/{skill-slug}/SKILL.md")
@@ -729,6 +870,7 @@ Which would you like to do?
 **Description**: [Full description]  
 **Platform**: claude.ai | API | Claude Code | All  
 **Location**: `{SKILLS_DIR}/{skill-slug}/`
+**Claude Code**: ✅ Symlink created at `~/.claude/skills/{skill-slug}/` (if integration enabled) | ❌ Not enabled
 
 ## Generated Files
 ```
@@ -770,9 +912,20 @@ curl -X POST https://api.anthropic.com/v1/skills \
 ```
 
 ### For Claude Code
+
+**If you enabled Claude Code integration during creation:**
+✅ **Already done!** Symlink created automatically at `~/.claude/skills/skill-name/`
+
+**If you didn't enable it, or want to add it manually:**
 ```bash
-cp -r {SKILLS_DIR}/skill-name/ ~/.claude/skills/
+# Option 1: Symlink (recommended - keeps files in sync)
+ln -s ~/skills/skill-name ~/.claude/skills/skill-name
+
+# Option 2: Copy (if symlinks don't work on your system)
+cp -r ~/skills/skill-name/ ~/.claude/skills/
 ```
+
+**Note:** With symlink, updates to `~/skills/skill-name/` automatically work in Claude Code!
 
 ## Testing
 Try these example triggers:
@@ -914,6 +1067,7 @@ Before finalizing any skill:
 - [ ] **Created in {SKILLS_DIR} (dynamically detected) using filesystem MCP**
 - [ ] **ZIP file created and tested**
 - [ ] **UPDATING.md file included**
+- [ ] **Claude Code symlink created (if user enabled integration)**
 
 ## Platform Compatibility Matrix
 
