@@ -13,6 +13,7 @@ A comprehensive skill-builder that creates production-ready Claude Skills follow
 - **📦 Automatic ZIP Creation** - Skills are automatically packaged and ready to upload
 - **🔄 Git Integration** - Optional pre-commit hooks auto-rebuild ZIPs on every commit
 - **🔗 Claude Code Integration** - Automatic symlinks make skills work in Claude Desktop AND Claude Code
+- **🚀 API Deployment Scripts** - Ready-to-run scripts for deploying to Anthropic API (organization-wide)
 - **✅ Full Validation** - Checks all requirements before creating skills
 - **📚 Progressive Disclosure** - Supports reference files, examples, and code helpers
 - **🔒 Security First** - Never uses temporary or container directories
@@ -199,6 +200,17 @@ If you have Claude Code installed:
 - Skills work in BOTH Claude Desktop AND Claude Code
 - Updates automatically sync to Claude Code
 - One source of truth - no file duplication
+
+### API Deployment Scripts (Always Included)
+
+Every skill includes ready-to-run deployment scripts:
+
+- **Bash script** (`deploy-to-api.sh`) - For Unix/Mac/Linux users
+- **Python script** (`deploy-to-api.py`) - Cross-platform option
+- Pre-filled with correct skill name and ZIP filename
+- Error handling and validation built-in
+- Deploy to Anthropic API with one command
+- Makes skills organization-wide (all team members get access)
 
 ### Comprehensive Validation
 

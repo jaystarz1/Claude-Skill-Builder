@@ -492,6 +492,163 @@ if enable_claude_code_integration:
 ✅ Skill works in both Claude Desktop AND Claude Code!
 ```
 
+10. **API DEPLOYMENT SCRIPTS** (Always create for API users)
+
+**Generate deployment scripts for Anthropic API:**
+
+Create ready-to-run scripts for deploying skills to the Anthropic API:
+
+**Bash Script (deploy-to-api.sh):**
+```bash
+filesystem:write_file(
+  path="{SKILLS_DIR}/{skill-slug}/deploy-to-api.sh",
+  content="""#!/bin/bash
+# Deploy {skill-slug} to Anthropic API
+# This makes the skill available organization-wide
+
+set -e
+
+SKILL_ZIP="{skill-slug}.zip"
+
+# Check if API key is set
+if [ -z "$ANTHROPIC_API_KEY" ]; then
+    echo "❌ Error: ANTHROPIC_API_KEY environment variable not set"
+    echo ""
+    echo "Please set your API key:"
+    echo "  export ANTHROPIC_API_KEY='your-api-key-here'"
+    echo ""
+    echo "Get your API key from: https://console.anthropic.com"
+    exit 1
+fi
+
+# Check if ZIP file exists
+if [ ! -f "$SKILL_ZIP" ]; then
+    echo "❌ Error: $SKILL_ZIP not found"
+    echo "Please ensure the ZIP file exists in this directory"
+    exit 1
+fi
+
+echo "📦 Deploying skill to Anthropic API..."
+echo ""
+
+# Deploy the skill
+response=$(curl -s -w "\n%{http_code}" -X POST https://api.anthropic.com/v1/skills \
+  -H "anthropic-beta: code-execution-2025-08-25,skills-2025-10-02,files-api-2025-04-14" \
+  -H "x-api-key: $ANTHROPIC_API_KEY" \
+  -F "skill_files=@$SKILL_ZIP")
+
+# Parse response
+http_code=$(echo "$response" | tail -n1)
+body=$(echo "$response" | sed '$d')
+
+if [ "$http_code" -eq 200 ] || [ "$http_code" -eq 201 ]; then
+    echo "✅ Skill deployed successfully!"
+    echo ""
+    echo "Response:"
+    echo "$body" | python3 -m json.tool 2>/dev/null || echo "$body"
+    echo ""
+    echo "💡 Tip: Save the skill ID for future updates"
+else
+    echo "❌ Deployment failed (HTTP $http_code)"
+    echo ""
+    echo "Response:"
+    echo "$body"
+    exit 1
+fi
+"""
+)
+```
+
+**Python Script (deploy-to-api.py):**
+```python
+filesystem:write_file(
+  path="{SKILLS_DIR}/{skill-slug}/deploy-to-api.py",
+  content="""#!/usr/bin/env python3
+\"\"\"Deploy {skill-slug} to Anthropic API\"\"\"  
+import os
+import sys
+from pathlib import Path
+
+try:
+    import requests
+except ImportError:
+    print("❌ Error: 'requests' library not installed")
+    print("")
+    print("Install it with: pip install requests")
+    sys.exit(1)
+
+SKILL_ZIP = "{skill-slug}.zip"
+API_KEY = os.getenv('ANTHROPIC_API_KEY')
+
+# Check if API key is set
+if not API_KEY:
+    print("❌ Error: ANTHROPIC_API_KEY environment variable not set")
+    print("")
+    print("Please set your API key:")
+    print("  export ANTHROPIC_API_KEY='your-api-key-here'")
+    print("")
+    print("Get your API key from: https://console.anthropic.com")
+    sys.exit(1)
+
+# Check if ZIP file exists
+if not Path(SKILL_ZIP).exists():
+    print(f"❌ Error: {SKILL_ZIP} not found")
+    print("Please ensure the ZIP file exists in this directory")
+    sys.exit(1)
+
+print("📦 Deploying skill to Anthropic API...")
+print("")
+
+try:
+    response = requests.post(
+        'https://api.anthropic.com/v1/skills',
+        headers={
+            'anthropic-beta': 'code-execution-2025-08-25,skills-2025-10-02,files-api-2025-04-14',
+            'x-api-key': API_KEY
+        },
+        files={'skill_files': open(SKILL_ZIP, 'rb')}
+    )
+    
+    if response.status_code in [200, 201]:
+        print("✅ Skill deployed successfully!")
+        print("")
+        print("Response:")
+        print(response.json())
+        print("")
+        print("💡 Tip: Save the skill ID for future updates")
+    else:
+        print(f"❌ Deployment failed (HTTP {response.status_code})")
+        print("")
+        print("Response:")
+        print(response.text)
+        sys.exit(1)
+        
+except requests.exceptions.RequestException as e:
+    print(f"❌ Network error: {e}")
+    sys.exit(1)
+"""
+)
+```
+
+**Make scripts executable:**
+```bash
+bash_tool: chmod +x {SKILLS_DIR}/{skill-slug}/deploy-to-api.sh {SKILLS_DIR}/{skill-slug}/deploy-to-api.py
+```
+
+**Benefits:**
+- ✅ Ready-to-run deployment scripts
+- ✅ Pre-filled with correct skill name and ZIP filename
+- ✅ Error handling and validation built-in
+- ✅ Clear instructions for users
+- ✅ Both bash and Python options (user choice)
+
+**User sees:**
+```
+✅ Created API deployment scripts:
+   - deploy-to-api.sh (bash)
+   - deploy-to-api.py (python)
+```
+
 **ZIP File Creation:**
 After creating all skill files, automatically create a ZIP file using one of these methods:
 
@@ -595,6 +752,8 @@ echo "ZIP file updated and staged for commit"
 ├── skill-name.zip ⭐ (AUTOMATICALLY CREATED)
 ├── UPDATING.md ⭐ (CRITICAL REMINDER)
 ├── .git/hooks/pre-commit ⭐ (AUTO-REBUILD HOOK - if git repo)
+├── deploy-to-api.sh ⭐ (API DEPLOYMENT SCRIPT - bash)
+├── deploy-to-api.py ⭐ (API DEPLOYMENT SCRIPT - python)
 ├── examples/ (CRITICAL: if user provided examples)
 │   ├── README.md (explains what each example shows)
 │   ├── example-1-[descriptive-name].md
@@ -680,6 +839,7 @@ EOF
 
 ### How to Upload
 
+#### For Claude Desktop:
 1. Go to Settings → Capabilities in claude.ai
 2. Remove old version of this skill
 3. Click "Upload skill"
@@ -687,6 +847,28 @@ EOF
 5. Test your changes
 
 **Changes take effect immediately after upload.**
+
+#### For API (Organization-Wide):
+
+If you deployed this skill via API, you need to update it:
+
+**Option 1: Use the deployment script (easiest):**
+```bash
+export ANTHROPIC_API_KEY='your-api-key-here'
+./deploy-to-api.sh
+```
+
+**Option 2: Manual API update:**
+```bash
+curl -X PUT https://api.anthropic.com/v1/skills/{skill_id} \\
+  -H "anthropic-beta: code-execution-2025-08-25,skills-2025-10-02,files-api-2025-04-14" \\
+  -H "x-api-key: $ANTHROPIC_API_KEY" \\
+  -F "skill_files=@[skill-name].zip"
+```
+
+**Note:** You need the `skill_id` from when you first deployed the skill.
+
+**Changes take effect immediately for all organization members.**
 ```
 
 ### Phase 6: Packaging & Deployment
@@ -879,12 +1061,16 @@ skill-name/
 ├── skill-name.zip ⭐ (ready to upload)
 ├── UPDATING.md ⭐ (critical reminder)
 ├── .git/hooks/pre-commit ⭐ (auto-rebuild hook - if git repo)
+├── deploy-to-api.sh ⭐ (API deployment - bash)
+├── deploy-to-api.py ⭐ (API deployment - python)
 ├── [other files]
 ```
 
 **ZIP File**: `skill-name.zip` has been automatically created and is ready to upload to claude.ai
 
 **Git Hook**: Pre-commit hook has been set up (if git repo exists) - ZIP will auto-rebuild on every commit
+
+**API Scripts**: Deployment scripts created - ready to deploy to Anthropic API
 
 ## Validation Results
 ### ✅ Passed
@@ -905,11 +1091,41 @@ skill-name/
 4. Select the generated ZIP file: `skill-name.zip`
 
 ### For API
+
+**Skills created by skills-builder include ready-to-run API deployment scripts!**
+
+#### Option 1: Use Deployment Scripts (Easiest)
+
+**Bash script:**
+```bash
+cd ~/skills/skill-name/
+export ANTHROPIC_API_KEY='your-api-key-here'
+./deploy-to-api.sh
+```
+
+**Python script:**
+```bash
+cd ~/skills/skill-name/
+export ANTHROPIC_API_KEY='your-api-key-here'
+python3 deploy-to-api.py
+```
+
+**Get your API key:** https://console.anthropic.com
+
+#### Option 2: Manual curl Command
+
+If you prefer manual deployment:
 ```bash
 curl -X POST https://api.anthropic.com/v1/skills \
   -H "anthropic-beta: code-execution-2025-08-25,skills-2025-10-02,files-api-2025-04-14" \
+  -H "x-api-key: $ANTHROPIC_API_KEY" \
   -F "skill_files=@skill-name.zip"
 ```
+
+**Important Notes:**
+- API deployment makes skills **organization-wide** (all team members get access)
+- Save the `skill_id` from the response for future updates
+- Skills deployed via API don't need manual upload to Claude Desktop/Code
 
 ### For Claude Code
 
