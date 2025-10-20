@@ -1,462 +1,333 @@
-# Claude Skills Builder
+# Skills-Builder
 
-An agnostic, config-first framework for creating Claude Skills that follow Anthropic's official best practices.
+> Create world-class Claude Skills that work on your actual filesystem!
 
-## What is this?
+A comprehensive skill-builder that creates production-ready Claude Skills following all official Anthropic guidelines. Automatically detects your home directory and creates skills in `~/skills/` with dynamic path detection that works for any user.
 
-The Skills Builder helps you create custom Claude Skills that comply with [Anthropic's official best practices](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/best-practices) through:
-- **Best practices validation** - Checks your spec against Claude's official guidelines
-- **Interactive interview** - Answer questions to define your skill
-- **Structural validation** - Ensure your spec is technically sound
-- **Scaffolding** - Generate all necessary files automatically
-- **Packaging** - Create uploadable .zip files for Claude
+---
 
-## Key Features
+## ✨ Features
 
-✅ **Enforces Claude's official limits**: 64-char names, 1024-char descriptions  
-✅ **Validates naming conventions**: Suggests gerund form ("Processing PDFs")  
-✅ **Checks best practices**: Time-sensitive content, file paths, MCP tool format  
-✅ **Progressive disclosure support**: Reference files, conditional content  
-✅ **Feedback loop patterns**: Built-in validation workflows  
-✅ **Under 500-line SKILL.md**: Automatic warnings for length
+- **🎯 Dynamic Path Detection** - Works for any user on any platform (Mac, Linux, Windows)
+- **📁 Persistent Files** - Creates skills on your actual filesystem, not temporary containers
+- **📦 Automatic ZIP Creation** - Skills are automatically packaged and ready to upload
+- **🔄 Git Integration** - Optional pre-commit hooks auto-rebuild ZIPs on every commit
+- **✅ Full Validation** - Checks all requirements before creating skills
+- **📚 Progressive Disclosure** - Supports reference files, examples, and code helpers
+- **🔒 Security First** - Never uses temporary or container directories
 
-## Two Ways to Use This
+---
 
-### Option 1: Use as a Claude Skill (Interactive - Recommended)
+## 🚀 Quick Start
 
-Upload the Skills Builder as a skill to Claude, then ask Claude to help you build skills!
+### 1. Set Up MCP Servers
 
-**Requirements:**
-- **Claude Code**: ✅ Works out of the box (built-in filesystem access)
-- **Claude Desktop**: ✅ Works with [Filesystem MCP](https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem) enabled
-- **Claude Web**: ⚠️ Limited (can provide guidance but can't create files)
+Before using skills-builder, you need two MCP servers:
 
-**Setup:**
-1. Download [`skills-builder-skill.zip`](./skills-builder-skill.zip)
-2. Open Claude (Code, Desktop, or Web)
-3. Go to Settings → Capabilities → Skills
-4. Enable "Code execution and file creation"
-5. Click "Upload skill"
-6. Select `skills-builder-skill.zip`
+**Required:**
+- **Filesystem MCP** - Lets Claude create files on your computer
 
-**If using Claude Desktop**, you'll also need the Filesystem MCP:
-```json
-// Add to your claude_desktop_config.json
-{
-  "mcpServers": {
-    "filesystem": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/your/workspace"]
-    }
-  }
-}
-```
+**Recommended:**
+- **Zip Creator MCP** - Automatically packages skills (has Python fallback if not installed)
 
-**Then use it:**
-```
-"Help me build a skill for analyzing spreadsheets"
-"Create a skill that processes PDFs"
-"I want to build a custom skill for my workflow"
-```
+**📖 Complete Setup Guide:** [SETUP.md](SETUP.md)
 
-Claude will guide you through the process, validate your spec, generate files, and package everything for upload.
+**Quick links:**
+- [Filesystem MCP Guide](reference/filesystem-mcp-setup.md) - Includes link to complete Google Doc
+- [Zip Creator MCP Guide](reference/zip-creator-mcp-setup.md) - Step-by-step installation
 
-### Option 2: Use as Command-Line Tools (Automation)
+### 2. Upload to Claude Desktop
 
-Clone and use the Python CLI directly for automation and CI/CD workflows.
+1. Download `skills-builder.zip` from this repository
+2. Open Claude Desktop
+3. Go to **Settings → Capabilities**
+4. Click **"Upload skill"**
+5. Select `skills-builder.zip`
+6. Start a new chat!
 
-**Requirements:**
-- Python 3.9+
-- No external dependencies (uses stdlib only)
-
-## Quick Start (CLI)
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/jaystarz1/Claude-Skill-Builder.git
-cd Claude-Skill-Builder
-```
-
-### 2. Create a skill spec
-
-See `examples/best-practices/skill.spec.json` for a complete example following all Claude best practices.
-
-### 3. Validate your spec
-
-```bash
-python3 -m code.cli validate --spec examples/best-practices/skill.spec.json
-```
-
-This checks:
-- Required fields and structure ❌ (blocking errors)
-- Claude's official limits ❌ (blocking errors)
-- Best practices ⚠️ (helpful suggestions)
-
-### 4. Generate the skill
-
-```bash
-python3 -m code.cli new --spec examples/best-practices/skill.spec.json --out dist/
-```
-
-### 5. Package for upload
-
-```bash
-python3 -m code.cli pack --dir dist/analyzing-spreadsheets --out dist/analyzing-spreadsheets.zip
-```
-
-### 6. Upload to Claude
-
-1. Open Claude (web, desktop, or mobile)
-2. Go to Settings → Capabilities → Skills
-3. Click "Upload Skill"
-4. Select your .zip file
-5. Test with one of your example triggers
-
-## Platform Compatibility
-
-| Platform | Interactive Skill | CLI Tools | Notes |
-|----------|-------------------|-----------|-------|
-| **Claude Code** | ✅ Full support | ✅ Full support | Best experience - built-in filesystem |
-| **Claude Desktop** | ✅ With Filesystem MCP | ✅ Full support | Requires MCP for file creation |
-| **Claude Web** | ⚠️ Guidance only | ✅ Full support | Can't create files, copy/paste instead |
-| **Claude API** | N/A | ✅ Full support | Use CLI tools |
-
-## Project Structure
+### 3. Create Your First Skill
 
 ```
-skills-builder/
-├─ skills-builder-skill.zip   # Pre-packaged skill for Claude upload
-├─ CLAUDE_BEST_PRACTICES.md   # Anthropic's official guidelines
-├─ MASTER_KNOWLEDGE.md         # Complete technical reference
-├─ skill.md                    # Meta-skill for builder orchestration
-├─ code/
-│  ├─ cli.py                   # Command-line interface
-│  ├─ scaffold.py              # Skill generation
-│  ├─ validate.py              # Spec validation + best practices
-│  ├─ pack.py                  # Zip packaging
-│  ├─ schema.py                # JSON schemas with Claude limits
-│  └─ plugins/                 # Extensible components
-├─ templates/                  # Generic templates (Claude-compliant)
-├─ examples/
-│  ├─ minimal/                 # Simple example
-│  └─ best-practices/          # Full-featured example
-└─ dist/                       # Generated skills
+User: "Create a skill that helps me write meeting notes"
+
+Claude: 
+✅ Detected skills directory: /Users/yourname/skills/
+✅ Creating skill at: /Users/yourname/skills/meeting-notes/
+✅ Created meeting-notes.zip (ready to upload)
+
+Your skill is ready! Upload meeting-notes.zip to Claude Desktop.
 ```
 
-## Skill Spec Format
+---
 
-A skill spec is a JSON file following Claude's requirements:
+## 📖 What This Does
 
-### Required Fields
-- **name** - Short skill name (max 64 chars, use gerund form, lowercase-with-hyphens)
-- **description** - What it does + when to use it (max 1024 chars)
-- **triggers** - Activation phrases (≥2)
-- **inputs** - Expected inputs (files, text, etc.)
-- **guardrails** - Rules and constraints
-- **procedure** - Step-by-step process
-- **output_contract** - Structure of the output
+The skills-builder creates Claude Skills that:
 
-### Optional Fields
-- **example_triggers** - Sample activation phrases
-- **reference_files** - For progressive disclosure
-- **code_helper** - Helper scripts and their usage
-- **validation** - Feedback loop configuration
-- **mcp_tools** - MCP tool references (format: `ServerName:tool_name`)
+- ✅ Work on **claude.ai**, **API**, and **Claude Code**
+- ✅ Follow all Anthropic specifications and best practices
+- ✅ Include comprehensive documentation and examples
+- ✅ Auto-generate ZIP files ready for upload
+- ✅ Validate naming conventions and structure
+- ✅ Support progressive disclosure for complex workflows
+- ✅ Include update instructions (UPDATING.md)
 
-See `CLAUDE_BEST_PRACTICES.md` for full details on Claude's official requirements.
+---
 
-## Best Practices Built In
+## 🗂️ Directory Structure
 
-The Skills Builder automatically enforces/suggests:
+After setup, your files will look like:
 
-### Naming & Description
-- ✅ Names use gerund form: "Processing PDFs" not "PDF Processor"
-- ✅ Names are lowercase-with-hyphens for upload compatibility
-- ✅ Descriptions include both WHAT and WHEN
-- ✅ Active voice without first/second person
-- ✅ Character limits enforced (64 name, 1024 description)
-
-### File Organization
-- ✅ Forward slashes for all paths (cross-platform)
-- ✅ Progressive disclosure patterns supported
-- ✅ Reference files stay one level deep
-- ✅ Warns when SKILL.md exceeds 500 lines
-
-### Content Quality
-- ⚠️ Detects time-sensitive information
-- ⚠️ Suggests feedback loops for validation
-- ⚠️ Validates MCP tool format
-- ⚠️ Checks for consistent terminology
-
-### Code & Scripts
-- ✅ Script execution modes (execute vs reference)
-- ✅ Validation feedback loop patterns
-- ✅ Helper script organization
-
-## Updating Skills
-
-**CRITICAL:** After making ANY changes to a skill, you MUST create a new ZIP file and upload it to claude.ai for the changes to take effect.
-
-### Why?
-The skill files on your disk ≠ the skill Claude Desktop is using. Claude loads skills from the uploaded ZIP file, not from your filesystem.
-
-### When Do You Need to Upload a New ZIP?
-- ✅ **ANY change to SKILL.md** - Fixes, updates, new sections
-- ✅ **ANY change to examples/** - New examples, edits
-- ✅ **ANY change to references/** - Updated reference files  
-- ✅ **ANY change to code/** - Script fixes
-- ✅ **Even tiny typo fixes** - ALL changes require new ZIP
-
-### How to Update a Skill
-
-#### Option 1: Using Skills-Builder Skill (Recommended)
 ```
-"Update the synopsis skill to fix the typo in paragraph 3"
-"Add a new example to the spreadsheet skill"
+~/skills/                          # Your skills directory
+├── meeting-notes/                 # Example skill
+│   ├── SKILL.md                   # Main skill definition
+│   ├── meeting-notes.zip          # Auto-generated ZIP
+│   ├── UPDATING.md                # Update instructions
+│   ├── examples/                  # Optional: example outputs
+│   └── references/                # Optional: reference docs
+│
+└── another-skill/
+    └── ...
+```
+
+---
+
+## 🎓 How to Use
+
+### Creating a New Skill
+
+```
+"Create a skill that [describes what you want]"
 ```
 
 The skills-builder will:
-1. Make the requested changes
-2. **Automatically recreate the ZIP file**
-3. Remind you to upload the new ZIP
+1. Ask clarifying questions about the skill's purpose
+2. Request examples (highly recommended!)
+3. Create the skill structure
+4. Generate all necessary files
+5. Create a ZIP file automatically
+6. Tell you where to upload it
 
-#### Option 2: Manual Update (CLI)
-```bash
-# 1. Make your changes to the skill files
-vim dist/my-skill/SKILL.md
+### Updating an Existing Skill
 
-# 2. Recreate the ZIP
-python3 -m code.cli pack --dir dist/my-skill --out dist/my-skill.zip
-
-# 3. Upload to claude.ai (see below)
+```
+"Update the [skill-name] skill to [describe changes]"
 ```
 
-### Uploading the Updated ZIP
+The skills-builder will:
+1. Locate the existing skill
+2. Make the requested changes
+3. Recreate the ZIP file
+4. Remind you to upload the new version
 
-1. Go to Settings → Capabilities in claude.ai
-2. **Remove the old version** of the skill
-3. Click "Upload skill"
-4. Select the **NEW** ZIP file
-5. Test your changes
+### Example Requests
 
-### Changes Take Effect Immediately
-Once you upload the new ZIP, Claude will use the updated version immediately in new conversations. Existing conversations may need to be restarted.
+**Simple skill:**
+```
+"Create a skill that formats JSON nicely"
+```
+
+**Complex skill with examples:**
+```
+"Create a skill for writing legal briefs. I'll provide example briefs to use as templates."
+```
+
+**Skill update:**
+```
+"Update the meeting-notes skill to add a section for action items"
+```
 
 ---
 
-## ZIP Creator MCP (Optional Enhancement)
+## 🔧 Requirements
 
-### What is the ZIP Creator MCP?
-The `zip-creator` MCP server is an optional tool that makes creating ZIP files for skills faster and more reliable. It provides a single function call (`zip-creator:create_zip`) instead of running Python scripts.
+### For Skills-Builder to Work:
 
-### Benefits
-- **Faster**: Direct tool call vs running Python script
-- **Simpler**: Single function call with clear parameters  
-- **Reliable**: Handles edge cases and provides detailed feedback
-- **Better UX**: Returns structured response with file count
-- **Automatic**: Skills-builder uses it automatically when available
+1. **Filesystem MCP** installed and configured
+   - Gives Claude access to create files on your computer
+   - Required for persistent file creation
+   - See [setup guide](SETUP.md)
 
-### Installation (Completely Optional)
+2. **Claude Desktop** (Pro, Team, or Enterprise)
+   - Required to upload and use custom skills
 
-**Location**: `/Users/[username]/mcp-servers/zip-creator/`
+### Optional but Recommended:
 
-**Files needed**:
-- `server.py` - MCP server implementation
-- `README.md` - Installation and usage guide
-- `INSTALL.md` - Detailed setup instructions
-
-For full installation instructions, see: [/Users/[username]/mcp-servers/zip-creator/README.md]
-
-**Config** (`claude_desktop_config.json`):
-```json
-{
-  "mcpServers": {
-    "zip-creator": {
-      "command": "/opt/homebrew/bin/python3.11",
-      "args": [
-        "-m",
-        "mcp.server.stdio",
-        "/Users/[username]/mcp-servers/zip-creator/server.py"
-      ]
-    }
-  }
-}
-```
-
-### Automatic Fallback
-The skills-builder **always works** even without the ZIP Creator MCP:
-
-1. **Try MCP first**: Attempt `zip-creator:create_zip` tool call
-2. **Detect failure**: Check for "unknown tool" or tool unavailable error  
-3. **Fall back**: Automatically run Python script instead
-4. **User transparency**: Mentions which method was used
-
-### Usage Examples
-
-**With MCP installed:**
-```
-"Create a ZIP for this skill"
-```
-Result: ✅ Instant ZIP creation via MCP tool
-
-**Without MCP:**
-```
-"Create a ZIP for this skill"  
-```
-Result: ✅ ZIP creation via Python script fallback
-
-**Both methods work identically** - the fallback is automatic and transparent.
-
-### Do You Need It?
-
-**You DON'T need it if:**
-- ✅ You're happy with the Python script fallback
-- ✅ You only create skills occasionally
-- ✅ You prefer fewer dependencies
-
-**You might want it if:**
-- ✅ You create skills frequently
-- ✅ You prefer tool-based workflows
-- ✅ You want slightly faster ZIP creation
-- ✅ You like having structured responses
-
-**Bottom line:** The ZIP Creator MCP is a nice-to-have enhancement, not a requirement. The skills-builder works perfectly without it.
+3. **Zip Creator MCP** installed
+   - Faster, more reliable ZIP creation
+   - Falls back to Python if not installed
+   - See [setup guide](reference/zip-creator-mcp-setup.md)
 
 ---
 
-## Commands Reference (CLI)
+## 📋 Features in Detail
 
-### validate
-Check a spec file for errors and best practice issues:
-```bash
-python3 -m code.cli validate --spec path/to/spec.json
-```
+### Dynamic Path Detection
 
-Output includes:
-- ❌ Blocking errors (must fix)
-- ⚠️ Best practice suggestions (optional but recommended)
+Works for any user on any platform:
 
-### new
-Generate a new skill from a spec:
-```bash
-python3 -m code.cli new --spec path/to/spec.json --out output_dir/
-```
+- Checks for `$SKILLS_DIR` environment variable
+- Falls back to `~/skills/` directory
+- Auto-creates the directory if it doesn't exist
+- **No hardcoded paths** - works for everyone!
 
-### pack
-Package a skill directory into a .zip:
-```bash
-python3 -m code.cli pack --dir skill_folder/ --out skill.zip
-```
+### Automatic ZIP Creation
 
-## Design Principles
+Every skill is automatically packaged:
 
-1. **Claude-compliant** - Follows Anthropic's official guidelines
-2. **Agnostic** - No domain assumptions baked in
-3. **Config-first** - Everything driven by the spec
-4. **Composable** - Templates and validators are pluggable
-5. **Deterministic** - Clear structure, predictable output
-6. **Portable** - Generates standard Claude Skills packages
+- Uses zip-creator MCP if available
+- Falls back to Python script if not
+- Excludes `.git/`, `__pycache__/`, etc.
+- One ZIP file per skill (overwrites previous)
 
-## Examples
+### Git Integration (Optional)
 
-### Minimal Example
-```bash
-python3 -m code.cli validate --spec examples/minimal/skill.spec.json
-python3 -m code.cli new --spec examples/minimal/skill.spec.json --out dist/
-python3 -m code.cli pack --dir dist/summarizing-documents --out dist/summarizing-documents.zip
-```
+If your skill is in a git repo:
 
-### Best Practices Example (Recommended)
-```bash
-python3 -m code.cli validate --spec examples/best-practices/skill.spec.json
-python3 -m code.cli new --spec examples/best-practices/skill.spec.json --out dist/
-python3 -m code.cli pack --dir dist/analyzing-spreadsheets --out dist/analyzing-spreadsheets.zip
-```
+- Auto-sets up pre-commit hook
+- Rebuilds ZIP on every commit
+- ZIP stays in sync with code
+- No manual ZIP recreation needed
 
-## Extending the Builder
+### Comprehensive Validation
 
-### Add Custom Validators
-```python
-# code/plugins/validators/custom.py
-from custom import register_validator
+Before creating any skill:
 
-def my_validator(spec):
-    errors = []
-    # Your validation logic
-    return errors
+- ✅ Validates skills directory exists
+- ✅ Checks filesystem MCP is available
+- ✅ Verifies naming conventions
+- ✅ Confirms no reserved words used
+- ✅ Checks all requirements met
 
-register_validator("my_validator", my_validator)
-```
+### Update Tracking
 
-### Add Custom Templates
-Place new templates in `templates/` and reference them in scaffold.py.
+Every skill includes:
 
-## Troubleshooting
-
-**Import errors**: Make sure you're running from the repository root directory.
-
-**Template rendering issues**: Check that your spec has all required fields.
-
-**Validation failures**: Read the error messages carefully - they tell you exactly what's wrong.
-
-**Best practice warnings**: These are suggestions, not errors. Your skill will work, but following the suggestions improves quality.
-
-**Filesystem MCP not working**: Make sure the path in your config points to a directory where you want skills generated.
-
-## Learn More
-
-- [Claude Skills Documentation](https://docs.anthropic.com/claude/docs/agents-and-tools/agent-skills/overview)
-- [Official Best Practices](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/best-practices)
-- [Filesystem MCP Server](https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem)
-- [CLAUDE_BEST_PRACTICES.md](./CLAUDE_BEST_PRACTICES.md) - Full reference
-- [MASTER_KNOWLEDGE.md](./MASTER_KNOWLEDGE.md) - Complete technical reference
-- [Skill Spec Examples](./examples/)
-- [Template Reference](./templates/)
-
-## What's Different from Generic Skill Builders?
-
-This builder is specifically designed for Claude Skills with:
-- ✅ Official Anthropic best practices baked in
-- ✅ Validation against Claude's requirements (64/1024 char limits)
-- ✅ Progressive disclosure patterns
-- ✅ Feedback loop support
-- ✅ MCP tool integration
-- ✅ Code execution environment awareness
-- ✅ Real best practice warnings during validation
-- ✅ **Pre-packaged as a Claude Skill** - Use Claude to build skills!
-- ✅ **Works in Claude Code out of the box**
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-Copyright 2025 Jay Tarzwell
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+- `UPDATING.md` - Instructions for updating
+- Clear reminders about ZIP recreation
+- Links to tools and documentation
 
 ---
 
-**Ready to build Claude-compliant skills?**
+## 🎯 Skill Quality
 
-**Interactive (Skill):** Upload `skills-builder-skill.zip` to Claude Code (works instantly) or Claude Desktop (with Filesystem MCP)
+Skills-builder creates professional-quality skills that:
 
-**CLI (Automation):**
-```bash
-# Start with the best practices example
-python3 -m code.cli validate --spec examples/best-practices/skill.spec.json
-python3 -m code.cli new --spec examples/best-practices/skill.spec.json --out dist/
-python3 -m code.cli pack --dir dist/analyzing-spreadsheets --out dist/analyzing-spreadsheets.zip
+- Follow [Anthropic's best practices](CLAUDE_BEST_PRACTICES.md)
+- Use proper naming conventions (lowercase-with-hyphens)
+- Include WHAT the skill does AND WHEN to use it
+- Have clear, actionable procedures
+- Include examples when provided
+- Work across all Claude platforms
+
+---
+
+## 📚 Documentation
+
+- **[SETUP.md](SETUP.md)** - Complete setup guide for new users
+- **[SKILL.md](SKILL.md)** - Full skills-builder documentation
+- **[UPDATES.md](UPDATES.md)** - Recent changes and improvements
+- **[reference/](reference/)** - MCP setup guides
+  - [filesystem-mcp-setup.md](reference/filesystem-mcp-setup.md)
+  - [zip-creator-mcp-setup.md](reference/zip-creator-mcp-setup.md)
+
+---
+
+## 🔒 Security
+
+The skills-builder:
+
+- ✅ Never uses temporary or container directories
+- ✅ Only creates files in `~/skills/` (or `$SKILLS_DIR`)
+- ✅ Validates all paths before operations
+- ✅ Uses filesystem MCP with proper permissions
+- ✅ Clear error messages for security issues
+
+---
+
+## 🐛 Troubleshooting
+
+### "Skills directory not found"
+
+**Problem:** Can't find or create `~/skills/`
+
+**Solution:** 
+1. Make sure filesystem MCP has access to your home directory
+2. Check config paths are absolute
+3. Restart Claude Desktop
+
+### "ZIP creation failed"
+
+**Problem:** Zip-creator MCP not working
+
+**Solution:**
+- Skills-builder automatically falls back to Python
+- Install zip-creator MCP for best experience (see [guide](reference/zip-creator-mcp-setup.md))
+
+### "Access denied" errors
+
+**Problem:** Filesystem MCP doesn't have permission
+
+**Solution:**
+1. Add your home directory to filesystem MCP config
+2. Verify paths are absolute
+3. Restart Claude Desktop after config changes
+
+See [SETUP.md](SETUP.md) for complete troubleshooting guide.
+
+---
+
+## 🤝 Contributing
+
+Contributions welcome! To contribute:
+
+1. Fork this repository
+2. Make your changes
+3. Test with the skills-builder skill
+4. Submit a pull request
+
+Areas for contribution:
+- Additional example skills
+- Improved documentation
+- Better error messages
+- Platform-specific fixes
+
+---
+
+## 📄 License
+
+MIT License - See [LICENSE](LICENSE) file for details
+
+---
+
+## 🙏 Acknowledgments
+
+- Built using [Anthropic's MCP SDK](https://github.com/modelcontextprotocol/sdk)
+- Follows [Claude Skills specifications](https://docs.anthropic.com/en/docs/build-with-claude/skills)
+- Inspired by the Claude developer community
+
+---
+
+## 📞 Support
+
+- **Issues:** Open an issue in this repository
+- **Questions:** Check [SETUP.md](SETUP.md) and [SKILL.md](SKILL.md) first
+- **Filesystem MCP:** See the [complete guide](https://docs.google.com/document/d/1UrH2zf0W_PABbaIJXUftcGF07zSM7bij_3wPlF_A6yY/edit?usp=sharing)
+- **MCP SDK:** https://github.com/modelcontextprotocol/sdk
+
+---
+
+## 🎉 Get Started
+
+Ready to build skills?
+
+1. **Read [SETUP.md](SETUP.md)** - Set up MCP servers
+2. **Upload skills-builder.zip** to Claude Desktop
+3. **Create your first skill!**
+
 ```
+"Create a skill that helps me organize my project notes"
+```
+
+**Happy skill building! 🚀**

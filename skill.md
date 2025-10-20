@@ -15,6 +15,113 @@ A comprehensive skill-builder that creates production-ready Claude Skills follow
 - User needs to package a skill for upload
 - User asks about Skills best practices or architecture
 
+## Configuration
+
+### DYNAMIC SKILLS DIRECTORY DETECTION
+
+**Skills Directory Location Strategy:**
+
+The skills-builder automatically detects the user's skills directory using this priority order:
+
+1. **Environment Variable** (highest priority):
+   - Check for `$SKILLS_DIR` environment variable
+   - If set and exists: use that path
+   
+2. **Standard Location** (default):
+   - Check for `~/skills/` directory (user's home directory + `/skills/`)
+   - If exists: use that path
+   
+3. **Auto-Create** (fallback):
+   - If neither above exist: create `~/skills/` directory
+   - Inform user of the new location
+
+**Detection Method:**
+
+**BEFORE starting ANY skill creation or update, run this detection:**
+
+```python
+import os
+from pathlib import Path
+
+# Method 1: Check environment variable
+env_skills_dir = os.getenv('SKILLS_DIR')
+if env_skills_dir:
+    skills_base = Path(env_skills_dir).expanduser().resolve()
+    if skills_base.exists():
+        use_skills_dir = skills_base
+        
+# Method 2: Check ~/skills/
+if not skills_base or not skills_base.exists():
+    skills_base = Path.home() / 'skills'
+    if skills_base.exists():
+        use_skills_dir = skills_base
+        
+# Method 3: Create ~/skills/
+if not skills_base or not skills_base.exists():
+    skills_base = Path.home() / 'skills'
+    try:
+        skills_base.mkdir(parents=True, exist_ok=True)
+        use_skills_dir = skills_base
+        # Inform user: "Created skills directory at {skills_base}"
+    except Exception as e:
+        # ERROR - cannot create directory
+        use_skills_dir = None
+
+# Result: use_skills_dir contains the absolute path
+```
+
+**OR use the helper script:**
+
+```bash
+python3 code/detect_skills_dir.py
+# Returns the absolute path to skills directory
+```
+
+**Examples of Detected Paths:**
+- macOS: `/Users/alice/skills/`
+- Linux: `/home/alice/skills/`
+- Windows: `C:\Users\alice\skills\`
+
+**Throughout this skill, whenever you see `{SKILLS_DIR}`, replace it with the detected skills directory path.**
+
+### CRITICAL PATH REQUIREMENTS
+
+**NEVER create skills in:**
+- ❌ `/home/claude/` (container - files are temporary and disappear)
+- ❌ `/tmp/` (temporary - files are deleted)
+- ❌ Any relative path without full validation
+- ❌ Any path not explicitly confirmed to be on user's filesystem
+
+**ALWAYS create skills in:**
+- ✅ `{SKILLS_DIR}/{skill-slug}/` (dynamically detected path)
+- ✅ Full absolute paths only
+- ✅ Using filesystem MCP tools as primary method
+- ✅ After validating directory exists and is accessible
+
+**Before starting ANY skill creation:**
+1. **DETECT SKILLS DIRECTORY** using method above - store as `{SKILLS_DIR}`
+2. Call `filesystem:list_directory` on `{SKILLS_DIR}`
+3. If this fails, STOP and report error to user
+4. If this succeeds, proceed with skill creation IN THIS DIRECTORY
+
+### Tool Selection Priority
+
+**PRIMARY (Always try first):**
+- `filesystem:create_directory` - Create skill folder structure
+- `filesystem:write_file` - Create SKILL.md, skill.spec.json, examples, etc.
+- `filesystem:list_directory` - Verify structure and check existing files
+- `filesystem:directory_tree` - Display final structure
+- `filesystem:read_text_file` - Read existing skill files when updating
+
+**FALLBACK (Only if filesystem MCP unavailable):**
+- `create_file` / `bash_tool` - Create in `/home/claude/`
+- **MUST** display clear instructions to user on how to move files to actual filesystem
+
+**Detection Strategy:**
+1. Try filesystem MCP tool first
+2. If error contains "unknown tool" or "not found", filesystem MCP is unavailable
+3. Automatically fall back with clear warning to user
+
 ## Inputs
 - User's description of what the skill should do
 - Workflow/procedures the skill should follow
@@ -66,8 +173,71 @@ This skill has access to comprehensive knowledge about Claude Skills:
 - **Schema validation** (`code/schema.py`) - Comprehensive validation rules
 - **Templates** (`templates/`) - Production-ready skill templates
 - **Examples** (`examples/`) - Reference implementations
+- **Helper Script** (`code/detect_skills_dir.py`) - Dynamic path detection
 
 ## Procedure
+
+### Phase 0: Pre-flight Validation (CRITICAL - DO THIS FIRST)
+
+**Before creating or updating any skill, ALWAYS run these checks:**
+
+1. **DETECT SKILLS DIRECTORY (NEW - MOST CRITICAL STEP):**
+   ```python
+   import os
+   from pathlib import Path
+   
+   # Try environment variable
+   env_skills_dir = os.getenv('SKILLS_DIR')
+   if env_skills_dir:
+       SKILLS_DIR = Path(env_skills_dir).expanduser().resolve()
+   else:
+       # Use ~/skills/
+       SKILLS_DIR = Path.home() / 'skills'
+   
+   # Create if doesn't exist
+   if not SKILLS_DIR.exists():
+       SKILLS_DIR.mkdir(parents=True, exist_ok=True)
+       # Inform user: "Created skills directory at {SKILLS_DIR}"
+   ```
+   
+   **Store the detected path in `SKILLS_DIR` variable and use it for ALL subsequent operations.**
+
+2. **Validate skills directory is accessible:**
+   ```
+   filesystem:list_directory(path="{SKILLS_DIR}")
+   ```
+   - If this succeeds: ✅ Proceed to next step
+   - If this fails: ❌ STOP - Show error to user (see Error Handling section)
+
+3. **Check if filesystem MCP is available:**
+   - Try the `filesystem:list_directory` call above
+   - If successful: ✅ Use filesystem MCP for all file operations
+   - If error contains "unknown tool": ⚠️ Fall back to bash tools with warning
+
+4. **Determine skill slug:**
+   - Convert user's skill name to lowercase-with-hyphens
+   - Remove any forbidden words ('claude', 'anthropic', 'ai')
+   - Validate name is ≤ 64 characters
+
+5. **Check if skill already exists (for new skills):**
+   ```
+   filesystem:list_directory(path="{SKILLS_DIR}")
+   ```
+   - Look for directory matching skill slug
+   - If exists: Ask user if they want to update or create new version
+   - If not exists: ✅ Proceed with creation
+
+6. **Confirm target path:**
+   - Display to user: "Creating skill at: `{SKILLS_DIR}/{skill-slug}/`"
+   - Get user confirmation before proceeding
+
+**Only after ALL checks pass, proceed to Phase 1.**
+
+**Example Path Detection Output:**
+```
+✅ Detected skills directory: /Users/alice/skills/
+✅ Creating skill at: /Users/alice/skills/weather-forecast/
+```
 
 ### Phase 1: Discovery & Specification
 1. Ask user what the skill should do (be specific)
@@ -112,12 +282,37 @@ This skill has access to comprehensive knowledge about Claude Skills:
 - MCP tools properly formatted (ServerName:tool_name)?
 
 ### Phase 3: Structure & Organization
-1. **Create base directory structure** for the skill
-2. **If user provided examples: CREATE examples/ folder** and save each example as a separate file
+
+**CRITICAL: Use filesystem MCP for all operations with dynamically detected {SKILLS_DIR}**
+
+1. **Create base directory structure** using filesystem MCP:
+   ```
+   filesystem:create_directory(path="{SKILLS_DIR}/{skill-slug}/")
+   ```
+
+2. **If user provided examples: CREATE examples/ folder** and save each example:
+   ```
+   filesystem:create_directory(path="{SKILLS_DIR}/{skill-slug}/examples/")
+   filesystem:write_file(
+     path="{SKILLS_DIR}/{skill-slug}/examples/example-1-[name].md",
+     content="[example content]"
+   )
+   ```
+
 3. Determine if progressive disclosure needed (>500 lines?)
-4. Organize reference files by domain/purpose
-5. Plan code execution strategy (scripts vs generation)
+
+4. Organize reference files by domain/purpose:
+   ```
+   filesystem:create_directory(path="{SKILLS_DIR}/{skill-slug}/references/")
+   ```
+
+5. Plan code execution strategy (scripts vs generation):
+   ```
+   filesystem:create_directory(path="{SKILLS_DIR}/{skill-slug}/code/")
+   ```
+
 6. Design validation/feedback loops if needed
+
 7. Reference MASTER_KNOWLEDGE.md - Progressive Disclosure section
 
 **CRITICAL: Examples Folder**
@@ -152,16 +347,45 @@ This skill has access to comprehensive knowledge about Claude Skills:
 - ⚠️ **Warnings** (should fix): Best practice violations, suboptimal patterns
 
 ### Phase 5: Generation & Packaging
-1. **Create the skill directory structure**
-2. **If examples were provided: Save them to examples/ folder NOW**
-3. **Create UPDATING.md file** - Critical reminder about ZIP recreation
-4. Use `python -m code.cli new` to generate skill (if using CLI tool)
-5. Verify all files created correctly
-6. Check SKILL.md length (<500 lines recommended)
-7. Validate generated content
-8. **Verify examples/ folder exists and contains all provided examples**
-9. **AUTOMATICALLY CREATE ZIP FILE** - Package the skill immediately after generation
-10. **AUTOMATICALLY SET UP GIT PRE-COMMIT HOOK** - Auto-rebuild ZIP on every commit
+
+**CRITICAL: All file operations use filesystem MCP with absolute paths using {SKILLS_DIR}**
+
+1. **Create SKILL.md** using filesystem MCP:
+   ```
+   filesystem:write_file(
+     path="{SKILLS_DIR}/{skill-slug}/SKILL.md",
+     content="[skill content with YAML frontmatter]"
+   )
+   ```
+
+2. **If examples were provided: Save them to examples/ folder:**
+   ```
+   filesystem:write_file(
+     path="{SKILLS_DIR}/{skill-slug}/examples/example-1-[name].md",
+     content="[example content]"
+   )
+   ```
+
+3. **Create UPDATING.md file** - Critical reminder about ZIP recreation:
+   ```
+   filesystem:write_file(
+     path="{SKILLS_DIR}/{skill-slug}/UPDATING.md",
+     content="[updating instructions - see template below]"
+   )
+   ```
+
+4. **Verify all files created correctly:**
+   ```
+   filesystem:directory_tree(path="{SKILLS_DIR}/{skill-slug}/")
+   ```
+
+5. Check SKILL.md length (<500 lines recommended)
+
+6. **Verify examples/ folder exists and contains all provided examples**
+
+7. **AUTOMATICALLY CREATE ZIP FILE** - Package the skill immediately after generation
+
+8. **AUTOMATICALLY SET UP GIT PRE-COMMIT HOOK** (if git repo exists) - Auto-rebuild ZIP on every commit
 
 **ZIP File Creation:**
 After creating all skill files, automatically create a ZIP file using one of these methods:
@@ -177,19 +401,19 @@ The ZIP filename MUST match the skill's folder/directory name + `.zip`
 If the `zip-creator:create_zip` MCP tool is available, use it:
 ```
 zip-creator:create_zip(
-  directory_path='[absolute-path-to-skill-directory]',
-  zip_name='[folder-name].zip'
+  directory_path='{SKILLS_DIR}/{skill-slug}',
+  zip_name='{skill-slug}.zip'
 )
 ```
 
 **Method 2: Python Script (Fallback)**
-If the MCP tool is not available, use this Python script:
+If the MCP tool is not available, use this Python script via bash_tool:
 ```python
 import zipfile
 from pathlib import Path
 
-skill_dir = Path('[skill-directory-path]')
-zip_name = '[skill-name].zip'
+skill_dir = Path('{SKILLS_DIR}/{skill-slug}')
+zip_name = '{skill-slug}.zip'
 
 with zipfile.ZipFile(str(skill_dir / zip_name), 'w', zipfile.ZIP_DEFLATED) as zipf:
     for file_path in skill_dir.rglob('*'):
@@ -212,32 +436,46 @@ Try Method 1 first. If the tool call fails with "unknown tool" error, automatica
 - ⚠️ **Exclude existing .zip files** - Avoid zip-in-zip situations
 
 **Git Pre-Commit Hook Setup:**
-After creating the ZIP file, automatically set up a git pre-commit hook to rebuild the ZIP on every commit:
+After creating the ZIP file, check if the skill directory is a git repository and set up auto-rebuild:
 
-**Hook Location:** `[skill-directory]/.git/hooks/pre-commit`
+1. **Check for git repo:**
+   ```
+   filesystem:list_directory(path="{SKILLS_DIR}/{skill-slug}/.git/")
+   ```
 
-**Hook Content:**
+2. **If git repo exists, create hooks directory:**
+   ```
+   filesystem:create_directory(path="{SKILLS_DIR}/{skill-slug}/.git/hooks/")
+   ```
+
+3. **Write pre-commit hook:**
+   ```
+   filesystem:write_file(
+     path="{SKILLS_DIR}/{skill-slug}/.git/hooks/pre-commit",
+     content="[hook script - see template below]"
+   )
+   ```
+
+4. **Make executable via bash:**
+   ```
+   bash_tool: chmod +x {SKILLS_DIR}/{skill-slug}/.git/hooks/pre-commit
+   ```
+
+**Hook Template:**
 ```bash
 #!/bin/bash
 # Auto-rebuild ZIP file when committing changes to skill files
 
 cd "$(git rev-parse --show-toplevel)"
 
-echo "Rebuilding [skill-name].zip..."
-zip -r [skill-name].zip . -x "*.git*" -x "*.claude*" -x "__MACOSX*" -x "*.DS_Store" -q
+echo "Rebuilding {skill-slug}.zip..."
+zip -r {skill-slug}.zip . -x "*.git*" -x "*.claude*" -x "__MACOSX*" -x "*.DS_Store" -q
 
 # Add the updated ZIP to this commit
-git add [skill-name].zip
+git add {skill-slug}.zip
 
 echo "ZIP file updated and staged for commit"
 ```
-
-**Setup Steps:**
-1. Check if `.git/` directory exists in skill folder
-2. If yes: Create `.git/hooks/` directory if it doesn't exist
-3. Write the pre-commit hook file with correct skill name
-4. Make it executable: `chmod +x .git/hooks/pre-commit`
-5. Inform user that auto-rebuild is set up
 
 **Benefits:**
 - ✅ ZIP automatically rebuilds on every `git commit`
@@ -311,7 +549,7 @@ zip-creator:create_zip(
 )
 ```
 
-#### Option 3: Python Script (Always Works)
+#### Option 4: Python Script (Always Works)
 ```bash
 python3 << 'EOF'
 import zipfile
@@ -344,7 +582,7 @@ EOF
 ```
 
 ### Phase 6: Packaging & Deployment
-1. Use `python -m code.cli pack` to create ZIP
+1. Use `python -m code.cli pack` to create ZIP (if CLI tool available)
 2. Provide upload instructions per platform:
    - **claude.ai**: Settings → Capabilities → Upload skill
    - **API**: POST to /v1/skills endpoint
@@ -367,11 +605,33 @@ EOF
 When the user wants to modify, fix, or improve an existing skill:
 
 ### Update Procedure
-1. **Identify what needs to change** - Ask user for specific changes needed
-2. **Locate the skill directory** - Find the skill folder on filesystem
-3. **Make the requested changes** - Edit SKILL.md, examples, references as needed
-4. **AUTOMATICALLY RECREATE ZIP FILE** - Always create fresh ZIP after any changes
-5. **Remind user to upload new ZIP** - Changes won't take effect until uploaded
+
+**CRITICAL: Use filesystem MCP for all read/write operations with {SKILLS_DIR}**
+
+1. **Run pre-flight validation** (Phase 0):
+   - DETECT SKILLS DIRECTORY → store as `{SKILLS_DIR}`
+   - Verify `{SKILLS_DIR}` exists and is accessible
+   - Check filesystem MCP availability
+   - Locate skill directory
+
+2. **Identify what needs to change** - Ask user for specific changes needed
+
+3. **Read existing skill files:**
+   ```
+   filesystem:read_text_file(path="{SKILLS_DIR}/{skill-slug}/SKILL.md")
+   ```
+
+4. **Make the requested changes** using filesystem MCP:
+   ```
+   filesystem:write_file(
+     path="{SKILLS_DIR}/{skill-slug}/SKILL.md",
+     content="[updated content]"
+   )
+   ```
+
+5. **AUTOMATICALLY RECREATE ZIP FILE** - Always create fresh ZIP after any changes
+
+6. **Remind user to upload new ZIP** - Changes won't take effect until uploaded
 
 ### Changes That Require ZIP Recreation
 - ✅ **ANY change to SKILL.md** - Procedure updates, wording fixes, new sections
@@ -382,6 +642,7 @@ When the user wants to modify, fix, or improve an existing skill:
 
 ### Update Output Format
 
+```markdown
 # Skill Update Report
 
 ## Changes Made
@@ -405,6 +666,59 @@ When the user wants to modify, fix, or improve an existing skill:
 **The skill files on disk ≠ the skill Claude Desktop is using**
 
 Changes are only applied when you upload the new ZIP file.
+```
+
+## Error Handling
+
+### If filesystem MCP not available:
+
+```
+⚠️ **FILESYSTEM MCP NOT DETECTED**
+
+I'll create the skill in a temporary location, but you'll need to move it manually:
+
+Temporary location: /home/claude/{skill-name}/
+Target location: {SKILLS_DIR}/{skill-name}/
+
+After I finish, please:
+1. Copy all files from the temporary location
+2. Paste them into {SKILLS_DIR}/{skill-name}/
+3. Verify the structure is correct
+
+Proceeding with creation...
+```
+
+### If target directory doesn't exist:
+
+```
+❌ **ERROR: Skills directory not found**
+
+Expected location: {SKILLS_DIR}
+This directory doesn't exist or isn't accessible.
+
+Please:
+1. Create the directory: {SKILLS_DIR}
+2. Ensure filesystem MCP has access to your home directory
+3. Try again
+
+Cannot proceed with skill creation.
+```
+
+### If skill already exists (for new skill creation):
+
+```
+⚠️ **SKILL ALREADY EXISTS**
+
+A skill with this name already exists at:
+{SKILLS_DIR}/{skill-slug}/
+
+Options:
+1. Update the existing skill (I'll modify the current files)
+2. Create with a different name (e.g., {skill-slug}-v2)
+3. Cancel
+
+Which would you like to do?
+```
 
 ## Output Format
 
@@ -413,13 +727,15 @@ Changes are only applied when you upload the new ZIP file.
 ## Skill Specification
 **Name**: [Skill name]  
 **Description**: [Full description]  
-**Platform**: claude.ai | API | Claude Code | All
+**Platform**: claude.ai | API | Claude Code | All  
+**Location**: `{SKILLS_DIR}/{skill-slug}/`
 
 ## Generated Files
 ```
 skill-name/
 ├── SKILL.md
 ├── skill-name.zip ⭐ (ready to upload)
+├── UPDATING.md ⭐ (critical reminder)
 ├── .git/hooks/pre-commit ⭐ (auto-rebuild hook - if git repo)
 ├── [other files]
 ```
@@ -444,7 +760,7 @@ skill-name/
 1. Go to Settings → Capabilities
 2. Enable "Code execution and file creation"
 3. Click "Upload skill"
-4. Select the generated ZIP file
+4. Select the generated ZIP file: `skill-name.zip`
 
 ### For API
 ```bash
@@ -455,7 +771,7 @@ curl -X POST https://api.anthropic.com/v1/skills \
 
 ### For Claude Code
 ```bash
-cp -r skill-name/ ~/.claude/skills/
+cp -r {SKILLS_DIR}/skill-name/ ~/.claude/skills/
 ```
 
 ## Testing
@@ -465,10 +781,11 @@ Try these example triggers:
 - [Trigger 3]
 
 ## Next Steps
-1. Test with real tasks
-2. Observe Claude's usage
-3. Iterate based on feedback
-4. Share with team (if applicable)
+1. **Upload the ZIP file to claude.ai** (Settings → Capabilities → Upload skill)
+2. Test with real tasks
+3. Observe Claude's usage
+4. Iterate based on feedback
+5. Share with team (if applicable)
 
 ## Advanced Features Used
 - [ ] Progressive disclosure (reference files)
@@ -501,6 +818,7 @@ When building skills, always consult:
 - `MASTER_KNOWLEDGE.md` - Complete technical reference
 - `CLAUDE_BEST_PRACTICES.md` - Official guidelines
 - `examples/best-practices/` - Production-ready example
+- `code/detect_skills_dir.py` - Dynamic path detection helper
 
 ## ZIP Creator MCP Integration
 
@@ -516,7 +834,7 @@ The `zip-creator` MCP server provides a tool (`zip-creator:create_zip`) that sim
 ### Installation (Optional)
 Users can install the zip-creator MCP server to enable automatic ZIP creation:
 
-**Location**: `/Users/[username]/mcp-servers/zip-creator/`
+**Location**: `~/mcp-servers/zip-creator/`
 
 **Files needed**:
 - `server.py` - MCP server implementation
@@ -532,7 +850,7 @@ Users can install the zip-creator MCP server to enable automatic ZIP creation:
       "args": [
         "-m",
         "mcp.server.stdio",
-        "/Users/[username]/mcp-servers/zip-creator/server.py"
+        "~/mcp-servers/zip-creator/server.py"
       ]
     }
   }
@@ -593,6 +911,9 @@ Before finalizing any skill:
 - [ ] Security audit passed
 - [ ] Tested on multiple models (if possible)
 - [ ] Works on target platform(s)
+- [ ] **Created in {SKILLS_DIR} (dynamically detected) using filesystem MCP**
+- [ ] **ZIP file created and tested**
+- [ ] **UPDATING.md file included**
 
 ## Platform Compatibility Matrix
 
@@ -639,5 +960,10 @@ Skills are like **onboarding guides for Claude**:
 - Platform differences matter
 - Security is critical
 - Best practices improve quality
+- **ALWAYS detect skills directory dynamically using Phase 0 method**
+- **Use filesystem MCP to create files in {SKILLS_DIR} (detected path)**
+- **Validate paths before starting**
+- **Provide clear error messages**
+- **Create ZIP files automatically**
 
-**This skill builds production-ready Skills that kick ass across all platforms.**
+**This skill builds production-ready Skills that work on ANY user's filesystem, detecting paths dynamically rather than using hardcoded locations.**
