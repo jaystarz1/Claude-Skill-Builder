@@ -12,6 +12,7 @@ A comprehensive skill-builder that creates production-ready Claude Skills follow
 - **📁 Persistent Files** - Creates skills on your actual filesystem, not temporary containers
 - **📦 Automatic ZIP Creation** - Skills are automatically packaged and ready to upload
 - **🔄 Git Integration** - Optional pre-commit hooks auto-rebuild ZIPs on every commit
+- **🔗 Claude Code Integration** - Automatic symlinks make skills work in Claude Desktop AND Claude Code
 - **✅ Full Validation** - Checks all requirements before creating skills
 - **📚 Progressive Disclosure** - Supports reference files, examples, and code helpers
 - **🔒 Security First** - Never uses temporary or container directories
@@ -189,6 +190,15 @@ If your skill is in a git repo:
 - Rebuilds ZIP on every commit
 - ZIP stays in sync with code
 - No manual ZIP recreation needed
+
+### Claude Code Integration (Optional)
+
+If you have Claude Code installed:
+
+- Auto-creates symlink from `~/.claude/skills/` to `~/skills/`
+- Skills work in BOTH Claude Desktop AND Claude Code
+- Updates automatically sync to Claude Code
+- One source of truth - no file duplication
 
 ### Comprehensive Validation
 
